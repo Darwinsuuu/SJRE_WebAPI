@@ -21,30 +21,30 @@ function createProduct(req, res) {
 
         if (req.file.filename) {
             models.product.create(productInfo)
-            .then((result) => {
-                res.status(201).json({
-                    success: true,
-                    message: "New product created!",
-                });
-            })
-            .catch((error) => {
+                .then((result) => {
+                    res.status(201).json({
+                        success: true,
+                        message: "New product created!",
+                    });
+                })
+                .catch((error) => {
 
-                if (error.name === 'SequelizeUniqueConstraintError') {
-                    // If a unique constraint is violated, return a user-friendly error message
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Validation Error',
-                        error: error.errors[0].message,
-                    });
-                } else {
-                    // Handle other types of errors here
-                    return res.status(500).json({
-                        success: false,
-                        message: 'Something went wrong in creating product.',
-                        error: error,
-                    });
-                }
-            })
+                    if (error.name === 'SequelizeUniqueConstraintError') {
+                        // If a unique constraint is violated, return a user-friendly error message
+                        return res.status(400).json({
+                            success: false,
+                            message: 'Validation Error',
+                            error: error.errors[0].message,
+                        });
+                    } else {
+                        // Handle other types of errors here
+                        return res.status(500).json({
+                            success: false,
+                            message: 'Something went wrong in creating product.',
+                            error: error,
+                        });
+                    }
+                })
         } else {
             return res.status(500).json({
                 success: false,
@@ -151,14 +151,14 @@ async function getAllProducts(req, res) {
 
 async function getSpecificProduct(req, res) {
 
-    const response = await models.sequelize.query("SELECT c.id AS categoryId, p.id AS productId, p.product AS productName, p.barcode, p.productDesc AS productDesc, p.productDesc AS productDesc, p.computedPrice AS computedPrice, p.sale AS sale, p.price AS price, p.quantity AS quantity, p.stockReminder, p.imgFilename as filename, p.status, COALESCE(s.totalSold, 0) AS sold, ROUND(COALESCE(r.averageRating, 0), 2) AS ratings FROM products p INNER JOIN categories c ON p.categoryId = c.id LEFT JOIN (SELECT prodId, COUNT(*) AS totalSold FROM sales GROUP BY prodId) s ON p.id = s.prodId LEFT JOIN (SELECT prodId, AVG(rating) AS averageRating FROM reviews GROUP BY prodId) r ON p.id = r.prodId WHERE p.id = '" + req.params.id +"'", { type: QueryTypes.SELECT });
+    const response = await models.sequelize.query("SELECT c.id AS categoryId, p.id AS productId, p.product AS productName, p.barcode, p.productDesc AS productDesc, p.productDesc AS productDesc, p.computedPrice AS computedPrice, p.sale AS sale, p.price AS price, p.quantity AS quantity, p.stockReminder, p.imgFilename as filename, p.status, COALESCE(s.totalSold, 0) AS sold, ROUND(COALESCE(r.averageRating, 0), 2) AS ratings FROM products p INNER JOIN categories c ON p.categoryId = c.id LEFT JOIN (SELECT prodId, COUNT(*) AS totalSold FROM sales GROUP BY prodId) s ON p.id = s.prodId LEFT JOIN (SELECT prodId, AVG(rating) AS averageRating FROM reviews GROUP BY prodId) r ON p.id = r.prodId WHERE p.id = '" + req.params.id + "'", { type: QueryTypes.SELECT });
 
-    const reponseReview = await models.review.findAll({where: {id: req.params.id}});
+    const reponseReview = await models.review.findAll({ where: { id: req.params.id } });
 
     // Send the grouped results in the response
     res.status(200).json({
         success: true,
-        result: {productInfo: response, reviews: reponseReview},
+        result: { productInfo: response, reviews: reponseReview },
     });
 }
 
@@ -166,9 +166,9 @@ async function getSpecificProduct(req, res) {
 
 async function getSpecificProductByBarcode(req, res) {
 
-    const response = await models.sequelize.query("SELECT p.id, p.product, p.price, p.sale, p.computedPrice, p.quantity AS stocks FROM `products` p WHERE p.barcode = '" + req.params.id +"'", { type: QueryTypes.SELECT });
+    const response = await models.sequelize.query("SELECT p.id, p.product, p.price, p.sale, p.computedPrice, p.quantity AS stocks FROM `products` p WHERE p.barcode = '" + req.params.id + "'", { type: QueryTypes.SELECT });
 
-    const reponseReview = await models.product.findAll({where: {id: req.params.id}});
+    const reponseReview = await models.product.findAll({ where: { id: req.params.id } });
 
     // Send the grouped results in the response
     res.status(200).json({
@@ -178,10 +178,53 @@ async function getSpecificProductByBarcode(req, res) {
 }
 
 
+async function buyProductViaBarcode(req, res) {
+
+    let productInfo = []
+
+    req.body.forEach(element => {
+        let tempArr = {
+            transactionId: element.transactionId,
+            prodId: element.id,
+            cashierId: 1,
+            currentPrice: element.price,
+            currentSale: element.sale,
+            currentComputedPrice: element.computedPrice,
+            quantity: element.quantity,
+            totalPrice: element.total * element.quantity,
+        }
+
+        productInfo.push(tempArr);
+        models.product.update({ quantity: element.stocks - 1 }, { where: { id: element.id } });
+
+        console.log(element.stocks)
+
+    });
+
+    console.log(productInfo)
+
+
+    models.sale.bulkCreate(productInfo)
+        .then((result) => {
+            res.status(201).json({
+                success: true,
+                message: "New sales created!",
+            });
+        }).catch(error => {
+            res.status(500).json({
+                success: false,
+                message: "Something went wrong.",
+                error: error.message,
+            });
+        })
+}
+
+
 module.exports = {
     createProduct: createProduct,
     getAllProducts: getAllProducts,
     getSpecificProduct: getSpecificProduct,
     getSpecificProductByBarcode: getSpecificProductByBarcode,
-    updateProduct: updateProduct
+    updateProduct: updateProduct,
+    buyProductViaBarcode: buyProductViaBarcode
 }

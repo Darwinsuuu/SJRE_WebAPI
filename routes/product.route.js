@@ -9,5 +9,6 @@ router.post("/updateProduct",  imageUploader.upload.single('newImgFilename'), co
 router.get("/getAllProducts", controller.getAllProducts);
 router.get("/getSpecificProduct/:id", controller.getSpecificProduct);
 router.get("/getSpecificProductByBarcode/:id", controller.getSpecificProductByBarcode);
+router.post("/buyProductViaBarcode", controller.buyProductViaBarcode);
 
 module.exports = router;
