@@ -87,7 +87,6 @@ function updateProduct(req, res) {
             status: req.body.status
         }
 
-        console.log(req.body)
 
         models.product.update(productInfo, { where: { id: req.body.productId } })
             .then(result => {
@@ -197,11 +196,8 @@ async function buyProductViaBarcode(req, res) {
         productInfo.push(tempArr);
         models.product.update({ quantity: element.stocks - 1 }, { where: { id: element.id } });
 
-        console.log(element.stocks)
-
     });
 
-    console.log(productInfo)
 
 
     models.sale.bulkCreate(productInfo)

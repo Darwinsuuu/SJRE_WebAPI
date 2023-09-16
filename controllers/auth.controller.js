@@ -6,70 +6,45 @@ require('dotenv').config();
 
 
 async function userAuthAdmin(req, res) {
-
     const credentials = {
         username: req.body.username,
         password: req.body.password,
     }
-    
+
     try {
+        const results = await models.sequelize.query("SELECT CASE WHEN status = 1 AND tablename = 'cashiers' THEN CONCAT(firstname, ' ', lastname) WHEN status = 1 AND tablename = 'admin_accounts' THEN 'admin' ELSE NULL END AS fullname, username, password FROM ( SELECT 'cashiers' AS tablename, username, password, firstname, lastname, status FROM cashiers WHERE status = 1 UNION ALL SELECT 'admin_accounts' AS tablename, username, password, NULL, NULL, status FROM admin_accounts WHERE status = 1 ) AS combined", { type: Sequelize.QueryTypes.SELECT });
 
-        models.admin_account.findOne({ where: { username: credentials.username } }).then(user => {
+        for (const user of results) {
+            const { username, password, fullname } = user;
 
-            if (user === null) {
-                res.status(401).json({
+            const result = await bycryptjs.compare(credentials.password, password);
+
+            if (result) {
+                // Password is correct, you can proceed with JWT token generation
+                const token = jwt.sign(
+                    {
+                        username: username,
+                    },
+                    process.env.JWT_SECRET_KEY
+                );
+
+                res.status(200).json({
                     success: true,
-                    message: "Invalid credentials!"
+                    message: "Authentication successful!",
+                    userId: user.user_id, // Make sure user_id is defined in your user object
+                    userType: user.fullname != 'admin' ? 2 : 1,
+                    fullname: user.fullname,
+                    token: token
                 });
-
-            } else {
-
-                bycryptjs.compare(credentials.password, user.password, function (err, result) {
-                    if (result) {
-
-                        jwt.sign(
-                            {
-                                userId: user.user_id,
-                                username: user.username,
-                            },
-                            process.env.JWT_SECRET_KEY,
-                            function (err, token) {
-                                if (err) {
-                                    console.error("Error generating JWT:", err);
-                                    res.status(500).json({
-                                        success: false,
-                                        message: "Error generating JWT token"
-                                    });
-                                } else {
-                                    res.status(200).json({
-                                        success: true,
-                                        message: "Authentication successful!",
-                                        userId: user.user_id,
-                                        userType: 1,
-                                        fullname: 'admin',
-                                        token: token
-                                    });
-                                }
-                            }
-                        );
-
-                    } else {
-                        res.status(401).json({
-                            success: false,
-                            message: "Invalid credentials"
-                        });
-                    }
-                });
+                return; // Exit the function when authentication is successful
             }
+        }
 
-        }).catch(error => {
-            res.status(500).json({
-                success: false,
-                message: "Something went wrong.",
-                error: error.message,
-            });
+        // If the loop completes without finding a matching user, return 401
+        res.status(401).json({
+            success: false,
+            message: "Invalid credentials"
         });
-
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -77,9 +52,8 @@ async function userAuthAdmin(req, res) {
             error: error.message,
         });
     }
-
 }
 
 module.exports = {
-    userAuthAdmin: userAuthAdmin
+    userAuthAdmin: userAuthAdmin,
 }
