@@ -15,7 +15,7 @@ async function createCustomer(req, res) {
                     middlename: req.body.personalInfo.middlename,
                     lastname: req.body.personalInfo.lastname,
                     gender: req.body.personalInfo.gender,
-                    mobileNo: req.body.personalInfo.mobileNo,
+                    mobileNo: req.body.personalInfo.contactNo,
                     region: req.body.addressInfo.region,
                     province: req.body.addressInfo.province,
                     city: req.body.addressInfo.city,
