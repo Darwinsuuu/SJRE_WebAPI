@@ -54,6 +54,74 @@ async function userAuthAdmin(req, res) {
     }
 }
 
+
+async function customerAuthentication(req, res) {
+    const credentials = {
+        username: req.body.username,
+        password: req.body.password,
+    }
+
+    try {
+        const user = await models.cust_account.findOne({ where: { email: credentials.username } });
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid credentials!",
+            });
+        }
+
+        const userInfo = await models.cust_account.findOne({ where: { id: user.id } });
+
+        const result = await bycryptjs.compare(credentials.password, user.password);
+
+        if (result) {
+            const userData = await models.customers.findOne({ where: { id: userInfo.custId } });
+
+            jwt.sign(
+                {
+                    userId: user.id,
+                    email: user.email,
+                    fullname: `${userData.firstname} ${userData.lastname}`,
+                },
+                process.env.JWT_SECRET_KEY,
+                function (err, token) {
+                    if (err) {
+                        console.error("Error generating JWT:", err);
+                        res.status(500).json({
+                            success: false,
+                            message: "Error generating JWT token",
+                        });
+                    }
+
+                    res.status(200).json({
+                        success: true,
+                        message: "Authentication successful!",
+                        userId: user.id,
+                        userType: 3,
+                        fullname: `${userData.firstname} ${userData.lastname}`,
+                        token: token,
+                    });
+                }
+            );
+        } else {
+            res.status(401).json({
+                success: false,
+                message: "Invalid credentials",
+            });
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong.",
+            error: error.message,
+        });
+    }
+}
+
+
 module.exports = {
     userAuthAdmin: userAuthAdmin,
+    customerAuthentication: customerAuthentication
 }

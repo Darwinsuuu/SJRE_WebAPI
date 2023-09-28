@@ -29,7 +29,7 @@ async function createCustomer(req, res) {
 
                 let custAccount = {
                     custId: null,
-                    email: req.body.accountInfo.email,
+                    email: req.body.accountInfo.emailAddress,
                     password: hash,
                     status: 1
                 }
