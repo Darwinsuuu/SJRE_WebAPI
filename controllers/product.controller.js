@@ -216,11 +216,47 @@ async function buyProductViaBarcode(req, res) {
 }
 
 
+
+async function getAllProductsWithoutCategory(req, res) {
+
+    try {
+
+        const result = await models.product.findAll({ where: {status: 1} });
+
+        if(result) {
+            
+            res.status(200).json({
+                success: true,
+                message: "Get all products without category is successfully loaded!",
+                result: result,
+                resultCount: result.length
+            })
+
+        } else {
+            res.status(500).json({
+                success: false,
+                message: "Something went wrong.",
+                error: error.message,
+            });
+        }
+
+    } catch(error) {
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong.",
+            error: error.message,
+        });
+    }
+
+}
+
+
 module.exports = {
     createProduct: createProduct,
     getAllProducts: getAllProducts,
     getSpecificProduct: getSpecificProduct,
     getSpecificProductByBarcode: getSpecificProductByBarcode,
     updateProduct: updateProduct,
-    buyProductViaBarcode: buyProductViaBarcode
+    buyProductViaBarcode: buyProductViaBarcode,
+    getAllProductsWithoutCategory: getAllProductsWithoutCategory
 }

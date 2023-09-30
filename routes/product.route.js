@@ -10,5 +10,6 @@ router.get("/getAllProducts", controller.getAllProducts);
 router.get("/getSpecificProduct/:id", controller.getSpecificProduct);
 router.get("/getSpecificProductByBarcode/:id", controller.getSpecificProductByBarcode);
 router.post("/buyProductViaBarcode", controller.buyProductViaBarcode);
+router.get("/getAllProductsWithoutCategory", controller.getAllProductsWithoutCategory);
 
 module.exports = router;

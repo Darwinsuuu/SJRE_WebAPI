@@ -9,7 +9,6 @@ async function createCustomer(req, res) {
         bycryptjs.genSalt(10, function (err, salt) {
             bycryptjs.hash(req.body.accountInfo.password, salt, function (err, hash) {
 
-
                 const customerInfo = {
                     firstname: req.body.personalInfo.firstname,
                     middlename: req.body.personalInfo.middlename,
@@ -18,7 +17,7 @@ async function createCustomer(req, res) {
                     mobileNo: req.body.personalInfo.contactNo,
                     region: req.body.addressInfo.region,
                     province: req.body.addressInfo.province,
-                    city: req.body.addressInfo.city,
+                    city: req.body.addressInfo.cityMun,
                     barangay: req.body.addressInfo.barangay,
                     subdivision: req.body.addressInfo.subdivision,
                     street: req.body.addressInfo.street,
@@ -93,6 +92,62 @@ async function createCustomer(req, res) {
 
 }
 
+
+
+async function getPersonalInformation(req, res) {
+
+    try {
+
+        const result = await models.customers.findOne( { where: { id: req.params.id } } );
+
+        res.status(200).json({
+            success: true,
+            message: "Get personal info is successfully loaded!",
+            result: result,
+        });
+
+    } catch(error) {
+
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message
+        })
+
+    }
+
+}
+
+
+
+async function getAccountInfo(req, res) {
+
+    try {
+
+        const result = await models.cust_account.findOne( { where: { custId: req.params.id } } );
+
+        res.status(200).json({
+            success: true,
+            message: "Get personal info is successfully loaded!",
+            result: result,
+        });
+
+    } catch(error) {
+
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message
+        })
+
+    }
+
+}
+
+
+
 module.exports = {
-    createCustomer: createCustomer
+    createCustomer: createCustomer,
+    getPersonalInformation: getPersonalInformation,
+    getAccountInfo: getAccountInfo
 }
