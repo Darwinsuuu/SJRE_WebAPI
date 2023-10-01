@@ -98,7 +98,7 @@ async function getPersonalInformation(req, res) {
 
     try {
 
-        const result = await models.customers.findOne( { where: { id: req.params.id } } );
+        const result = await models.customers.findOne({ where: { id: req.params.id } });
 
         res.status(200).json({
             success: true,
@@ -106,7 +106,7 @@ async function getPersonalInformation(req, res) {
             result: result,
         });
 
-    } catch(error) {
+    } catch (error) {
 
         res.status(500).json({
             success: false,
@@ -124,7 +124,7 @@ async function getAccountInfo(req, res) {
 
     try {
 
-        const result = await models.cust_account.findOne( { where: { custId: req.params.id } } );
+        const result = await models.cust_account.findOne({ where: { custId: req.params.id } });
 
         res.status(200).json({
             success: true,
@@ -132,7 +132,7 @@ async function getAccountInfo(req, res) {
             result: result,
         });
 
-    } catch(error) {
+    } catch (error) {
 
         res.status(500).json({
             success: false,
@@ -145,9 +145,107 @@ async function getAccountInfo(req, res) {
 }
 
 
+async function updatePersonalInformation(req, res) {
+
+    try {
+
+        const customerInfo = {
+            firstname: req.body.firstname,
+            middlename: req.body.middlename,
+            lastname: req.body.lastname,
+            gender: req.body.gender,
+            mobileNo: req.body.contactNo
+        }
+
+        models.customers.update(customerInfo, { where: { id: req.body.id } } );
+
+        res.status(200).json({
+            success: true,
+            message: "Update Personal Info is successful!",
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message
+        })
+    }
+
+}
+
+async function updateAddressInformation(req, res) {
+
+    try {
+
+
+        const customerInfo = {
+            region: req.body.region,
+            province: req.body.province,
+            city: req.body.cityMun,
+            barangay: req.body.barangay,
+            subdivision: req.body.subdivision,
+            street: req.body.street,
+            houseNo: req.body.houseNo,
+            zipCode: req.body.zipCode,
+            fullAddress: req.body.fullAddress
+        }
+
+
+        models.customers.update(customerInfo, { where: { id: req.body.id } } );
+
+        res.status(200).json({
+            success: true,
+            message: "Update Address Info is successful!",
+        });
+
+
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message
+        })
+    }
+
+}
+
+
+async function updateAccountPassword(req, res) {
+
+    try {
+
+        bycryptjs.genSalt(10, function (err, salt) {
+            bycryptjs.hash(req.body.password, salt, function (err, hash) {
+
+                models.cust_account.update( { password: hash }, { where: { id: req.body.id } } )
+
+                res.status(200).json({
+                    success: true,
+                    message: "Update Account Info is successful!",
+                })
+
+            })
+        })
+
+
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message
+        })
+    }
+
+}
 
 module.exports = {
     createCustomer: createCustomer,
     getPersonalInformation: getPersonalInformation,
-    getAccountInfo: getAccountInfo
+    getAccountInfo: getAccountInfo,
+    updatePersonalInformation: updatePersonalInformation,
+    updateAddressInformation: updateAddressInformation,
+    updateAccountPassword: updateAccountPassword
 }

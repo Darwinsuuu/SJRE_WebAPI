@@ -11,6 +11,7 @@ const cashierRoute = require('./routes/cashier.route');
 const locationRoute = require('./routes/location.route');
 const userRoute = require('./routes/customer.route');
 const emailerRoute = require('./routes/emailer.route');
+const cartRoute = require('./routes/cart.route');
 
 app.use(cors({
     origin: '*',
@@ -29,5 +30,6 @@ app.use('/api/cashier', cashierRoute);
 app.use('/api/location', locationRoute);
 app.use('/api/user', userRoute);
 app.use('/api/emailer', emailerRoute);
+app.use('/api/cart', cartRoute);
 
 module.exports = app;
