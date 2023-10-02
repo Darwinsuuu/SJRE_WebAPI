@@ -65,6 +65,56 @@ function sendOTPEmail(req, res) {
 
 }
 
+
+
+
+function sendInquiry(req, res) {
+
+    try {
+
+        let message = req.body.message + `<br><br>Sender's Fullname: ${req.body.fullname}<br>Sender's Email: ${req.body.email}`;
+
+        // Email content
+        const mailOptions = {
+            from: process.env.GMAIL_EMAIL, // Sender's email address
+            to: process.env.GMAIL_INQUIRIES, // Recipient's email address
+            subject: req.body.subject,
+            html: message,
+        };
+
+        // Send the email
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Error sending email:', error);
+                res.status(500).json({
+                    status: false,
+                    message: "Something went wrong!",
+                    error: error.message
+                })
+            } else {
+                console.log('Email sent:', info.response);
+
+                res.status(201).json({
+                    status: true,
+                    message: "Email successfully sent!",
+                    info: info.response
+                })
+            }
+
+        });
+
+
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            message: "Something went wrong!",
+            error: error.message
+        })
+    }
+
+}
+
 module.exports = {
-    sendOTPEmail: sendOTPEmail
+    sendOTPEmail: sendOTPEmail,
+    sendInquiry: sendInquiry
 }

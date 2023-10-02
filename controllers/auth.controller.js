@@ -4,7 +4,6 @@ const bycryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-
 async function userAuthAdmin(req, res) {
     const credentials = {
         username: req.body.username,
@@ -12,7 +11,24 @@ async function userAuthAdmin(req, res) {
     }
 
     try {
-        const results = await models.sequelize.query("SELECT CASE WHEN status = 1 AND tablename = 'cashiers' THEN CONCAT(firstname, ' ', lastname) WHEN status = 1 AND tablename = 'admin_accounts' THEN 'admin' ELSE NULL END AS fullname, username, password FROM ( SELECT 'cashiers' AS tablename, username, password, firstname, lastname, status FROM cashiers WHERE status = 1 UNION ALL SELECT 'admin_accounts' AS tablename, username, password, NULL, NULL, status FROM admin_accounts WHERE status = 1 ) AS combined", { type: Sequelize.QueryTypes.SELECT });
+        const results = await models.sequelize.query(`SELECT
+                                                        CASE
+                                                            WHEN status = 1 AND tablename = 'cashiers' THEN CONCAT(firstname, ' ', lastname)
+                                                            WHEN status = 1 AND tablename = 'admin_accounts' THEN 'admin'
+                                                            ELSE NULL
+                                                        END AS fullname,
+                                                        id, -- Add the 'id' field here
+                                                        username,
+                                                        password
+                                                    FROM (
+                                                        SELECT 'cashiers' AS tablename, id, username, password, firstname, lastname, status
+                                                        FROM cashiers
+                                                        WHERE status = 1
+                                                        UNION ALL
+                                                        SELECT 'admin_accounts' AS tablename, id, username, password, NULL, NULL, status
+                                                        FROM admin_accounts
+                                                        WHERE status = 1
+                                                    ) AS combined`, { type: Sequelize.QueryTypes.SELECT });
 
         for (const user of results) {
             const { username, password, fullname } = user;
@@ -28,10 +44,14 @@ async function userAuthAdmin(req, res) {
                     process.env.JWT_SECRET_KEY
                 );
 
+                console.log("=============================")
+                console.log(user)
+                console.log("=============================")
+
                 res.status(200).json({
                     success: true,
                     message: "Authentication successful!",
-                    userId: user.user_id, // Make sure user_id is defined in your user object
+                    userId: user.id, // Make sure user_id is defined in your user object
                     userType: user.fullname != 'admin' ? 2 : 1,
                     fullname: user.fullname,
                     token: token

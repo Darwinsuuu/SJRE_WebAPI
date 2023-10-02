@@ -157,7 +157,7 @@ async function updatePersonalInformation(req, res) {
             mobileNo: req.body.contactNo
         }
 
-        models.customers.update(customerInfo, { where: { id: req.body.id } } );
+        models.customers.update(customerInfo, { where: { id: req.body.id } });
 
         res.status(200).json({
             success: true,
@@ -192,7 +192,7 @@ async function updateAddressInformation(req, res) {
         }
 
 
-        models.customers.update(customerInfo, { where: { id: req.body.id } } );
+        models.customers.update(customerInfo, { where: { id: req.body.id } });
 
         res.status(200).json({
             success: true,
@@ -219,7 +219,7 @@ async function updateAccountPassword(req, res) {
         bycryptjs.genSalt(10, function (err, salt) {
             bycryptjs.hash(req.body.password, salt, function (err, hash) {
 
-                models.cust_account.update( { password: hash }, { where: { id: req.body.id } } )
+                models.cust_account.update({ password: hash }, { where: { id: req.body.id } })
 
                 res.status(200).json({
                     success: true,
@@ -241,11 +241,34 @@ async function updateAccountPassword(req, res) {
 
 }
 
+
+async function newsletter(req, res) {
+
+    try {
+
+        await models.newsletterReceiver.create({ email: req.body.email, status: 1 });
+        res.status(201).json({
+            success: true,
+            message: 'Successfully added to newsletter receiver!'
+        })
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message
+        })
+    }
+
+}
+
+
 module.exports = {
     createCustomer: createCustomer,
     getPersonalInformation: getPersonalInformation,
     getAccountInfo: getAccountInfo,
     updatePersonalInformation: updatePersonalInformation,
     updateAddressInformation: updateAddressInformation,
-    updateAccountPassword: updateAccountPassword
+    updateAccountPassword: updateAccountPassword,
+    newsletter: newsletter
 }

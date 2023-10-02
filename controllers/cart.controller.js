@@ -1,6 +1,16 @@
 const { Sequelize, QueryTypes, QueryError } = require('sequelize');
 const models = require('../models');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
 
+// Create a transporter using Gmail SMTP
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.GMAIL_EMAIL, // Your Gmail email address
+        pass: process.env.GMAIL_FA_PASSWORD,  // Your Gmail password or App Password if 2-factor authentication is enabled
+    },
+});
 
 
 async function getAllMyCartList(req, res) {
@@ -153,7 +163,7 @@ async function checkout(req, res) {
 
                     let prod = products[0].filter(x => x.id == element.prodId);
 
-                    models.product.update({quantity: prod[0].quantity - element.quantity}, { where: { id: prod[0].id } });
+                    models.product.update({ quantity: prod[0].quantity - element.quantity }, { where: { id: prod[0].id } });
                     models.cart.destroy({ where: { id: element.cartId } });
                     // console.log(element.cartId)
 
@@ -171,14 +181,50 @@ async function checkout(req, res) {
                 });
 
                 return models.onlineSales.bulkCreate(productInfo);
-            }).then((final) => {
 
-                res.status(201).json({
-                    success: true,
-                    message: "Online transaction successfully created!",
+            }).then((result3) => {
+                return models.sequelize.query(`SELECT C.firstname, CA.email FROM customers C INNER JOIN cust_accounts CA ON C.id = CA.custId WHERE C.id = ${req.body.OLTransData.custId}`);
+            })
+            .then((final) => {
+
+
+                const message = `<div style="width: 100%; max-width: 420px; color: #000; padding: 50px 30px; border: 1px solid #3f51b5; border-radius: 4px; font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif; margin: 50px auto; font-size: 18px">
+                            <h1 style="margin: 0 0 5px; color: #3f51b5 !important">SJ Renewable Energy</h1>
+                            <p style="margin: 0 0 15px;">Hi, ${final[0][0].firstname.toUpperCase()}</p>
+                            <p style="margin: 0 0 15px;">Thank you for purchasing in our online shop. You'll receive an email notification after we confirmed your order.</p>
+                            <p style="margin: 0;"><b>Note:</b> Do not reply to this email address. Thank you!</p>
+                        </div>`;
+
+                // Email content
+                const mailOptions = {
+                    from: process.env.GMAIL_EMAIL, // Sender's email address
+                    to:  final[0][0].email, // Recipient's email address
+                    subject: 'SJRE - Online Store Purchase',
+                    html: message,
+                };
+
+
+                // Send the email
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        res.status(500).json({
+                            status: false,
+                            message: "Something went wrong!",
+                            error: error.message
+                        })
+                    } else {
+
+                        // transaction.commit();   /* commit all query made */
+
+                        res.status(201).json({
+                            success: true,
+                            message: "Online transaction successfully created!",
+                        });
+                    }
+
                 });
 
-                // transaction.commit();   /* commit all query made */
+
             })
             .catch((error) => {
                 // checks if transaction was initialized
