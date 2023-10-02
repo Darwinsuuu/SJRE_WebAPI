@@ -214,7 +214,7 @@ async function checkout(req, res) {
                         })
                     } else {
 
-                        // transaction.commit();   /* commit all query made */
+                        transaction.commit();   /* commit all query made */
 
                         res.status(201).json({
                             success: true,
