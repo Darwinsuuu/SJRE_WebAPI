@@ -8,5 +8,6 @@ router.post("/createCart", controller.createCart);
 router.post("/updateCart", controller.updateCart);
 router.get("/deleteCart/:id", controller.deleteCart);
 router.post("/checkout/", controller.checkout);
+router.get("/getAllPurchasesById/:id", controller.getAllPurchasesById);
 
 module.exports = router;

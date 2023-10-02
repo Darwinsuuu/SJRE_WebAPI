@@ -198,7 +198,7 @@ async function checkout(req, res) {
                 // Email content
                 const mailOptions = {
                     from: process.env.GMAIL_EMAIL, // Sender's email address
-                    to:  final[0][0].email, // Recipient's email address
+                    to: final[0][0].email, // Recipient's email address
                     subject: 'SJRE - Online Store Purchase',
                     html: message,
                 };
@@ -262,11 +262,54 @@ async function checkout(req, res) {
 
 }
 
+async function getAllPurchasesById(req, res) {
+    try {
+        const result = await models.onlineTransaction.findAll({ where: { custId: req.params.id } }, { order: [['updatedAt', 'DESC']] });
+
+        if (result) {
+            const promises = result.map(async (element) => {
+                const transaction = await models.sequelize.query(`
+                    SELECT OS.currentPrice, OS.currentSale, OS.currentComputedPrice, OS.quantity, OS.totalPrice, P.imgFilename, P.product 
+                    FROM onlinesales OS 
+                    INNER JOIN products P ON OS.prodId = P.id 
+                    WHERE OS.OLTransID = :transId`, {
+                    replacements: { transId: element.id },
+                    type: models.sequelize.QueryTypes.SELECT,
+                });
+
+                return {
+                    status: element.status,
+                    createdAt: element.createdAt,
+                    remarks: element.remarks,
+                    sales: transaction,
+                };
+            });
+
+            const purchasesLists = await Promise.all(promises);
+
+            res.status(200).json({
+                success: true,
+                message: "Successfully fetched!",
+                result: purchasesLists,
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message,
+        });
+    }
+}
+
+
+
 
 module.exports = {
     getAllMyCartList: getAllMyCartList,
     createCart: createCart,
     updateCart: updateCart,
     deleteCart: deleteCart,
-    checkout: checkout
+    checkout: checkout,
+    getAllPurchasesById: getAllPurchasesById
 }
