@@ -83,10 +83,15 @@ function updateProduct(req, res) {
             computedPrice: req.body.computedPrice,
             quantity: req.body.quantity,
             stockReminder: req.body.stockReminder,
-            imgFilename: req.file.filename || req.body.imgFilename,
+            // imgFilename: req.file.filename || req.body.imgFilename,
             status: req.body.status
         }
 
+
+
+        console.log("==============================")
+        console.log(req)
+        console.log("==============================")
 
         models.product.update(productInfo, { where: { id: req.body.productId } })
             .then(result => {

@@ -66,6 +66,7 @@ async function userAuthAdmin(req, res) {
             message: "Invalid credentials"
         });
     } catch (error) {
+        console.log(error)
         res.status(500).json({
             success: false,
             message: "Something went wrong.",
