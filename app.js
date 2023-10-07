@@ -13,6 +13,7 @@ const userRoute = require('./routes/customer.route');
 const emailerRoute = require('./routes/emailer.route');
 const cartRoute = require('./routes/cart.route');
 const dashboardRoute = require('./routes/dashboard.route');
+const orderRoute = require('./routes/order.route');
 
 app.use(cors({
     origin: '*',
@@ -33,5 +34,6 @@ app.use('/api/user', userRoute);
 app.use('/api/emailer', emailerRoute);
 app.use('/api/cart', cartRoute);
 app.use('/api/dashboard', dashboardRoute);
+app.use('/api/order', orderRoute);
 
 module.exports = app;
