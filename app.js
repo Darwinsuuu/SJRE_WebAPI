@@ -14,6 +14,8 @@ const emailerRoute = require('./routes/emailer.route');
 const cartRoute = require('./routes/cart.route');
 const dashboardRoute = require('./routes/dashboard.route');
 const orderRoute = require('./routes/order.route');
+const reportRoute = require('./routes/reports.route');
+const reviewRoute = require('./routes/review.route');
 
 app.use(cors({
     origin: '*',
@@ -35,5 +37,7 @@ app.use('/api/emailer', emailerRoute);
 app.use('/api/cart', cartRoute);
 app.use('/api/dashboard', dashboardRoute);
 app.use('/api/order', orderRoute);
+app.use('/api/report', reportRoute);
+app.use('/api/review', reviewRoute);
 
 module.exports = app;

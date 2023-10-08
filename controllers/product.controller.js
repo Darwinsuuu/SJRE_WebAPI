@@ -1,5 +1,6 @@
 const { Sequelize, QueryTypes, QueryError } = require('sequelize');
 const models = require('../models');
+const imageUploader = require('../helpers/image-uploader')
 
 function createProduct(req, res) {
 
@@ -83,15 +84,10 @@ function updateProduct(req, res) {
             computedPrice: req.body.computedPrice,
             quantity: req.body.quantity,
             stockReminder: req.body.stockReminder,
-            // imgFilename: req.file.filename || req.body.imgFilename,
+            imgFilename: req.file ? req.file.filename : req.body.imgFilename,
             status: req.body.status
         }
 
-
-
-        console.log("==============================")
-        console.log(req)
-        console.log("==============================")
 
         models.product.update(productInfo, { where: { id: req.body.productId } })
             .then(result => {
@@ -113,7 +109,29 @@ function updateProduct(req, res) {
 
 
 async function getAllProducts(req, res) {
-    const response = await models.sequelize.query("SELECT c.category AS category, p.id AS productId, p.product AS productName, p.quantity AS quantity, p.stockReminder, p.imgFilename as filename, p.status, COALESCE(s.totalSold, 0) AS sold, ROUND(COALESCE(r.averageRating, 0), 2) AS ratings FROM products p INNER JOIN categories c ON p.categoryId = c.id LEFT JOIN (SELECT prodId, COUNT(*) AS totalSold FROM sales GROUP BY prodId) s ON p.id = s.prodId LEFT JOIN (SELECT prodId, AVG(rating) AS averageRating FROM reviews GROUP BY prodId) r ON p.id = r.prodId", { type: QueryTypes.SELECT });
+    const response = await models.sequelize.query(`SELECT
+    c.category AS category,
+    p.id AS productId,
+    p.product AS productName,
+    p.quantity AS quantity,
+    p.stockReminder,
+    p.imgFilename AS filename,
+    p.status,
+    COALESCE(s.totalSold, 0) AS sold,
+    ROUND(COALESCE(r.averageRating, 0), 2) AS ratings
+FROM
+    products p
+INNER JOIN
+    categories c ON p.categoryId = c.id
+LEFT JOIN
+    (SELECT prodId, SUM(totalSold) AS totalSold FROM
+        (SELECT id AS prodId, quantity AS totalSold FROM sales
+         UNION ALL
+         SELECT id AS prodId, quantity AS totalSold FROM onlinesales) sales_combined
+     GROUP BY prodId) s ON p.id = s.prodId
+LEFT JOIN
+    (SELECT prodId, AVG(rating) AS averageRating FROM reviews GROUP BY prodId) r ON p.id = r.prodId;
+`, { type: QueryTypes.SELECT });
 
     // Initialize a map to store categories and their items
     const categoryMap = new Map();
@@ -155,14 +173,83 @@ async function getAllProducts(req, res) {
 
 async function getSpecificProduct(req, res) {
 
-    const response = await models.sequelize.query("SELECT c.id AS categoryId, p.id AS productId, p.product AS productName, p.barcode, p.productDesc AS productDesc, p.productDesc AS productDesc, p.computedPrice AS computedPrice, p.sale AS sale, p.price AS price, p.quantity AS quantity, p.stockReminder, p.imgFilename as filename, p.status, COALESCE(s.totalSold, 0) AS sold, ROUND(COALESCE(r.averageRating, 0), 2) AS ratings FROM products p INNER JOIN categories c ON p.categoryId = c.id LEFT JOIN (SELECT prodId, COUNT(*) AS totalSold FROM sales GROUP BY prodId) s ON p.id = s.prodId LEFT JOIN (SELECT prodId, AVG(rating) AS averageRating FROM reviews GROUP BY prodId) r ON p.id = r.prodId WHERE p.id = '" + req.params.id + "'", { type: QueryTypes.SELECT });
+    const response = await models.sequelize.query(`SELECT
+                                                        c.id AS categoryId,
+                                                        p.id AS productId,
+                                                        p.product AS productName,
+                                                        p.barcode,
+                                                        p.productDesc AS productDesc,
+                                                        p.productDesc AS productDesc,
+                                                        p.computedPrice AS computedPrice,
+                                                        p.sale AS sale,
+                                                        p.price AS price,
+                                                        p.quantity AS quantity,
+                                                        p.stockReminder,
+                                                        p.imgFilename AS filename,
+                                                        p.status,
+                                                        COALESCE(s.totalSold, 0) AS sold,
+                                                        ROUND(COALESCE(r.averageRating, 0), 2) AS ratings
+                                                    FROM
+                                                        products p
+                                                    INNER JOIN
+                                                        categories c ON p.categoryId = c.id
+                                                    LEFT JOIN
+                                                        (
+                                                            SELECT
+                                                                prodId,
+                                                                SUM(totalSold) AS totalSold
+                                                            FROM
+                                                                (
+                                                                    SELECT
+                                                                        prodId,
+                                                                        SUM(quantity) AS totalSold
+                                                                    FROM
+                                                                        sales
+                                                                    WHERE
+                                                                        prodId = ${req.params.id}
+                                                                    GROUP BY
+                                                                        prodId
 
-    const reponseReview = await models.review.findAll({ where: { id: req.params.id } });
+                                                                    UNION ALL
+
+                                                                    SELECT
+                                                                        prodId,
+                                                                        SUM(quantity) AS totalSold
+                                                                    FROM
+                                                                        onlinesales
+                                                                    WHERE
+                                                                        prodId = ${req.params.id}
+                                                                    GROUP BY
+                                                                        prodId
+                                                                ) combinedSales
+                                                            GROUP BY
+                                                                prodId
+                                                        ) s ON p.id = s.prodId
+                                                    LEFT JOIN
+                                                        (
+                                                            SELECT
+                                                                prodId,
+                                                                AVG(rating) AS averageRating
+                                                            FROM
+                                                                reviews
+                                                            WHERE
+                                                                prodId = ${req.params.id}
+                                                            GROUP BY
+                                                                prodId
+                                                        ) r ON p.id = r.prodId
+                                                    WHERE
+                                                        p.id = ${req.params.id};
+                                                    `, { type: QueryTypes.SELECT });
+
+    // const reponseReview = await models.review.findAll({ where: { prodId: req.params.id } });
+    const responseReview = await models.sequelize.query(`SELECT C.firstname, C.lastname, R.reviewDesc, R.rating, R.createdAt FROM reviews R INNER JOIN customers C ON c.id = R.custId WHERE R.prodId=${req.params.id}`);
+
+    console.log(responseReview)
 
     // Send the grouped results in the response
     res.status(200).json({
         success: true,
-        result: { productInfo: response, reviews: reponseReview },
+        result: { productInfo: response, reviews: responseReview[0] },
     });
 }
 
@@ -226,10 +313,10 @@ async function getAllProductsWithoutCategory(req, res) {
 
     try {
 
-        const result = await models.product.findAll({ where: {status: 1} });
+        const result = await models.product.findAll({ where: { status: 1 } });
 
-        if(result) {
-            
+        if (result) {
+
             res.status(200).json({
                 success: true,
                 message: "Get all products without category is successfully loaded!",
@@ -245,7 +332,7 @@ async function getAllProductsWithoutCategory(req, res) {
             });
         }
 
-    } catch(error) {
+    } catch (error) {
         res.status(500).json({
             success: false,
             message: "Something went wrong.",
