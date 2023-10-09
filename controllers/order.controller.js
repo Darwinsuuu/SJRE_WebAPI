@@ -76,10 +76,10 @@ async function updateOrderTransaction(req, res) {
         }
 
         console.log("==================================")
-        await models.onlinetransaction.update(data, { where: { id: req.body.id } });
+        await models.onlineTransaction.update(data, { where: { id: req.body.id } });
 
         console.log("==================================")
-        const custId = await models.onlinetransaction.findAll({where: {id: req.body.id}});
+        const custId = await models.onlineTransaction.findAll({where: {id: req.body.id}});
 
         console.log(`custId ${custId[0].custId}`)
         console.log("==================================")

@@ -151,7 +151,9 @@ async function checkout(req, res) {
             })
             .then((data) => {
                 products = data;
-                return models.onlinetransaction.create(OLTransData, { transaction });
+                // return models.onlineTransaction.create(OLTransData, { transaction });
+                const date = new Date();
+                return models.sequelize.query(`INSERT INTO onlinetransaction (custId, location, remarks, status, createdAt, updatedAt) VALUES ('${OLTransData.custId}', '${OLTransData.location}', '${OLTransData.remarks}', '${OLTransData.status}','${date}', '${date}')`, { transaction })
             })
             .then((result) => {
                 let productInfo = [];
@@ -210,7 +212,7 @@ async function checkout(req, res) {
                         res.status(500).json({
                             status: false,
                             message: "Something went wrong!",
-                            error: error
+                            error: error.message
                         })
                     } else {
 
@@ -237,7 +239,7 @@ async function checkout(req, res) {
                     return res.status(400).json({
                         success: false,
                         message: 'Validation Error',
-                        error: error,
+                        error: error.errors[0].message,
                     });
                 } else {
                     // Handle other types of errors here
@@ -245,7 +247,7 @@ async function checkout(req, res) {
                     return res.status(500).json({
                         success: false,
                         message: "Something went wrong",
-                        error: error,
+                        error: error.message,
                     });
 
                 }
@@ -264,7 +266,7 @@ async function checkout(req, res) {
 
 async function getAllPurchasesById(req, res) {
     try {
-        const result = await models.onlinetransaction.findAll({ where: { custId: req.params.id } }, { order: [['updatedAt', 'DESC']] });
+        const result = await models.onlineTransaction.findAll({ where: { custId: req.params.id } }, { order: [['updatedAt', 'DESC']] });
 
         if (result) {
             const promises = result.map(async (element) => {

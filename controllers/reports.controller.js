@@ -4,7 +4,7 @@ const models = require('../models');
 async function downloadReports(req, res) {
   try {
     // Fetch data from Table1
-    const table1Data = await models.onlinetransaction.findAll();
+    const table1Data = await models.onlineTransaction.findAll();
 
     // Fetch data from Table2
     const table2Data = await models.onlineSales.findAll();
