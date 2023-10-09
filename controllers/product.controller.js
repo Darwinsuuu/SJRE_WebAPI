@@ -182,73 +182,7 @@ LEFT JOIN
 async function getSpecificProduct(req, res) {
 
     try {
-        const response = await models.sequelize.query(`SELECT
-                                                        c.id AS categoryId,
-                                                        p.id AS productId,
-                                                        p.product AS productName,
-                                                        p.barcode,
-                                                        p.productDesc AS productDesc,
-                                                        p.productDesc AS productDesc,
-                                                        p.computedPrice AS computedPrice,
-                                                        p.sale AS sale,
-                                                        p.price AS price,
-                                                        p.quantity AS quantity,
-                                                        p.stockReminder,
-                                                        p.imgFilename AS filename,
-                                                        p.status,
-                                                        COALESCE(s.totalSold, 0) AS sold,
-                                                        ROUND(COALESCE(r.averageRating, 0), 2) AS ratings
-                                                    FROM
-                                                        products p
-                                                    INNER JOIN
-                                                        categories c ON p.categoryId = c.id
-                                                    LEFT JOIN
-                                                        (
-                                                            SELECT
-                                                                prodId,
-                                                                SUM(totalSold) AS totalSold
-                                                            FROM
-                                                                (
-                                                                    SELECT
-                                                                        prodId,
-                                                                        SUM(quantity) AS totalSold
-                                                                    FROM
-                                                                        sales
-                                                                    WHERE
-                                                                        prodId = ${req.params.id}
-                                                                    GROUP BY
-                                                                        prodId
-
-                                                                    UNION ALL
-
-                                                                    SELECT
-                                                                        prodId,
-                                                                        SUM(quantity) AS totalSold
-                                                                    FROM
-                                                                        onlinesales
-                                                                    WHERE
-                                                                        prodId = ${req.params.id}
-                                                                    GROUP BY
-                                                                        prodId
-                                                                ) combinedSales
-                                                            GROUP BY
-                                                                prodId
-                                                        ) s ON p.id = s.prodId
-                                                    LEFT JOIN
-                                                        (
-                                                            SELECT
-                                                                prodId,
-                                                                AVG(rating) AS averageRating
-                                                            FROM
-                                                                reviews
-                                                            WHERE
-                                                                prodId = ${req.params.id}
-                                                            GROUP BY
-                                                                prodId
-                                                        ) r ON p.id = r.prodId
-                                                    WHERE
-                                                        p.id = ${req.params.id};
-                                                    `, { type: QueryTypes.SELECT });
+        const response = await models.sequelize.query(`SELECT c.id AS categoryId, p.id AS productId, p.product AS productName, p.barcode, p.productDesc AS productDesc, p.productDesc AS productDesc, p.computedPrice AS computedPrice, p.sale AS sale, p.price AS price, p.quantity AS quantity, p.stockReminder, p.imgFilename AS filename, p.status, COALESCE(s.totalSold, 0) AS sold, ROUND(COALESCE(r.averageRating, 0), 2) AS ratings FROM products p INNER JOIN categories c ON p.categoryId = c.id LEFT JOIN ( SELECT prodId, SUM(totalSold) AS totalSold FROM ( SELECT prodId, SUM(quantity) AS totalSold FROM sales WHERE prodId = ${req.params.id} GROUP BY prodId UNION ALL SELECT prodId, SUM(quantity) AS totalSold FROM onlinesales WHERE prodId = ${req.params.id} GROUP BY prodId ) combinedSales GROUP BY prodId ) s ON p.id = s.prodId LEFT JOIN ( SELECT prodId, AVG(rating) AS averageRating FROM reviews WHERE prodId = ${req.params.id} GROUP BY prodId ) r ON p.id = r.prodId WHERE p.id = ${req.params.id}`, { type: QueryTypes.SELECT });
 
 
         // const reponseReview = await models.review.findAll({ where: { prodId: req.params.id } });
@@ -264,6 +198,7 @@ async function getSpecificProduct(req, res) {
             success: false,
             message: "Something went wrong.",
             error: error.message,
+            details: "<br><pre>"+JSON.stringify(3, null, error)+"</pre>"
         });
     }
 
