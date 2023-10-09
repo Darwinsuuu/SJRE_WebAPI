@@ -10,5 +10,6 @@ router.post("/updatePersonalInformation", controller.updatePersonalInformation);
 router.post("/updateAddressInformation", controller.updateAddressInformation);
 router.post("/updateAccountPassword", controller.updateAccountPassword);
 router.post("/newsletter", controller.newsletter);
+router.get("/getUserInfoByEmail/:email", controller.getUserInfoByEmail);
 
 module.exports = router;

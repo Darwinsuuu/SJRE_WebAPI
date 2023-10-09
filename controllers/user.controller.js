@@ -263,6 +263,25 @@ async function newsletter(req, res) {
 }
 
 
+
+async function getUserInfoByEmail(req, res) {
+    try {
+
+        const result = await models.cust_account.findOne({where: { email: req.params.email }})
+
+        res.status(200).json(result);
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message
+        })
+    }
+}
+
+
+
 module.exports = {
     createCustomer: createCustomer,
     getPersonalInformation: getPersonalInformation,
@@ -270,5 +289,6 @@ module.exports = {
     updatePersonalInformation: updatePersonalInformation,
     updateAddressInformation: updateAddressInformation,
     updateAccountPassword: updateAccountPassword,
-    newsletter: newsletter
+    newsletter: newsletter,
+    getUserInfoByEmail: getUserInfoByEmail
 }
