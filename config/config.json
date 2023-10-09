@@ -1,23 +1,23 @@
 {
   "development": {
-    "username": "root",
-    "password": null,
-    "database": "sjre_db",
-    "host": "127.0.0.1",
+    "username": "u777334569_sjre",
+    "password": "G8Hk6v_Yddu%j@!}-*YC",
+    "database": "u777334569_sjre_db",
+    "host": "156.67.222.52",
     "dialect": "mysql"
   },
   "test": {
-    "username": "root",
-    "password": null,
-    "database": "sjre_db",
-    "host": "127.0.0.1",
+    "username": "u777334569_sjre",
+    "password": "G8Hk6v_Yddu%j@!}-*YC",
+    "database": "u777334569_sjre_db",
+    "host": "156.67.222.52",
     "dialect": "mysql"
   },
   "production": {
-    "username": "root",
-    "password": null,
-    "database": "sjre_db",
-    "host": "127.0.0.1",
+    "username": "u777334569_sjre",
+    "password": "G8Hk6v_Yddu%j@!}-*YC",
+    "database": "u777334569_sjre_db",
+    "host": "156.67.222.52",
     "dialect": "mysql"
   }
 }
