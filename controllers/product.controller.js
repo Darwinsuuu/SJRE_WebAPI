@@ -109,7 +109,8 @@ function updateProduct(req, res) {
 
 
 async function getAllProducts(req, res) {
-    const response = await models.sequelize.query(`SELECT
+    try {
+        const response = await models.sequelize.query(`SELECT
     c.category AS category,
     p.id AS productId,
     p.product AS productName,
@@ -133,47 +134,55 @@ LEFT JOIN
     (SELECT prodId, AVG(rating) AS averageRating FROM reviews GROUP BY prodId) r ON p.id = r.prodId;
 `, { type: QueryTypes.SELECT });
 
-    // Initialize a map to store categories and their items
-    const categoryMap = new Map();
+        // Initialize a map to store categories and their items
+        const categoryMap = new Map();
 
-    for (const row of response) {
-        const category = row.category;
+        for (const row of response) {
+            const category = row.category;
 
-        if (!categoryMap.has(category)) {
-            // If the category doesn't exist in the map, create an entry for it
-            categoryMap.set(category, []);
+            if (!categoryMap.has(category)) {
+                // If the category doesn't exist in the map, create an entry for it
+                categoryMap.set(category, []);
+            }
+
+            // Add the product to the category's list of items
+            categoryMap.get(category).push({
+                productId: row.productId,
+                productName: row.productName,
+                quantity: row.quantity,
+                filename: row.filename,
+                stockReminder: row.stockReminder,
+                sold: row.sold,
+                ratings: row.ratings,
+                status: row.status == 1 ? true : false,
+            });
         }
 
-        // Add the product to the category's list of items
-        categoryMap.get(category).push({
-            productId: row.productId,
-            productName: row.productName,
-            quantity: row.quantity,
-            filename: row.filename,
-            stockReminder: row.stockReminder,
-            sold: row.sold,
-            ratings: row.ratings,
-            status: row.status == 1 ? true : false,
+        // Convert the map to an array of objects
+        const groupedResults = Array.from(categoryMap, ([category, items]) => ({
+            category,
+            items,
+        }));
+
+        // Send the grouped results in the response
+        res.status(200).json({
+            success: true,
+            result: groupedResults,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong.",
+            error: error.message,
         });
     }
-
-    // Convert the map to an array of objects
-    const groupedResults = Array.from(categoryMap, ([category, items]) => ({
-        category,
-        items,
-    }));
-
-    // Send the grouped results in the response
-    res.status(200).json({
-        success: true,
-        result: groupedResults,
-    });
 }
 
 
 async function getSpecificProduct(req, res) {
 
-    const response = await models.sequelize.query(`SELECT
+    try {
+        const response = await models.sequelize.query(`SELECT
                                                         c.id AS categoryId,
                                                         p.id AS productId,
                                                         p.product AS productName,
@@ -241,14 +250,24 @@ async function getSpecificProduct(req, res) {
                                                         p.id = ${req.params.id};
                                                     `, { type: QueryTypes.SELECT });
 
-    // const reponseReview = await models.review.findAll({ where: { prodId: req.params.id } });
-    const responseReview = await models.sequelize.query(`SELECT C.firstname, C.lastname, R.reviewDesc, R.rating, R.createdAt FROM reviews R INNER JOIN customers C ON c.id = R.custId WHERE R.prodId=${req.params.id}`);
 
-    // Send the grouped results in the response
-    res.status(200).json({
-        success: true,
-        result: { productInfo: response, reviews: responseReview[0] },
-    });
+        // const reponseReview = await models.review.findAll({ where: { prodId: req.params.id } });
+        const responseReview = await models.sequelize.query(`SELECT C.firstname, C.lastname, R.reviewDesc, R.rating, R.createdAt FROM reviews R INNER JOIN customers C ON c.id = R.custId WHERE R.prodId=${req.params.id}`);
+
+        // Send the grouped results in the response
+        res.status(200).json({
+            success: true,
+            result: { productInfo: response, reviews: responseReview[0] },
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong.",
+            error: error.message,
+        });
+    }
+
+
 }
 
 
