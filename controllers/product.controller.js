@@ -198,7 +198,7 @@ async function getSpecificProduct(req, res) {
             success: false,
             message: "Something went wrong.",
             error: error.message,
-            details: "<br><pre>"+JSON.stringify(3, null, error)+"</pre>"
+            details: error
         });
     }
 
