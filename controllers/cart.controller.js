@@ -180,7 +180,7 @@ async function checkout(req, res) {
                     productInfo.push(tempCart);
                 });
 
-                return models.onlineSales.bulkCreate(productInfo);
+                return models.onlinesales.bulkCreate(productInfo);
 
             }).then((result3) => {
                 return models.sequelize.query(`SELECT C.firstname, CA.email FROM customers C INNER JOIN cust_accounts CA ON C.id = CA.custId WHERE C.id = ${req.body.OLTransData.custId}`);

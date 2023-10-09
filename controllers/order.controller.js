@@ -42,7 +42,7 @@ async function getOrderById(req, res) {
         const result = await models.sequelize.query(`SELECT OT.id, C.firstname, C.lastname, CA.email, OT.location, C.mobileNo, OT.remarks, OT.status, OT.createdAt, OT.updatedAt from onlinetransactions OT INNER JOIN customers C ON OT.custId = C.id INNER JOIN cust_accounts CA ON CA.custId = C.id WHERE OT.id='${req.params.id}' ORDER BY OT.createdAt`);
 
 
-        // const orders = await models.onlineSales.findAll({where: {OLTransID: req.params.id} })
+        // const orders = await models.onlinesales.findAll({where: {OLTransID: req.params.id} })
         const orders = await models.sequelize.query(`SELECT P.product, OS.quantity, OS.totalPrice FROM onlineSales OS INNER JOIN products P ON OS.prodId = P.id WHERE OS.OLTransID=${req.params.id}`)
 
         res.status(200).json({
