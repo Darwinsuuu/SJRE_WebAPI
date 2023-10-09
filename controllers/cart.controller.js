@@ -210,7 +210,7 @@ async function checkout(req, res) {
                         res.status(500).json({
                             status: false,
                             message: "Something went wrong!",
-                            error: error.message
+                            error: error
                         })
                     } else {
 
@@ -237,7 +237,7 @@ async function checkout(req, res) {
                     return res.status(400).json({
                         success: false,
                         message: 'Validation Error',
-                        error: error.errors[0].message,
+                        error: error,
                     });
                 } else {
                     // Handle other types of errors here
@@ -245,7 +245,7 @@ async function checkout(req, res) {
                     return res.status(500).json({
                         success: false,
                         message: "Something went wrong",
-                        error: error.message,
+                        error: error,
                     });
 
                 }
