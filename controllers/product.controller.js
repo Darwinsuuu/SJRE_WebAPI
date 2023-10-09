@@ -186,7 +186,7 @@ async function getSpecificProduct(req, res) {
 
 
         // const reponseReview = await models.review.findAll({ where: { prodId: req.params.id } });
-        const responseReview = await models.sequelize.query(`SELECT C.firstname, C.lastname, R.reviewDesc, R.rating, R.createdAt FROM reviews R INNER JOIN customers C ON c.id = R.custId WHERE R.prodId=${req.params.id}`);
+        const responseReview = await models.sequelize.query(`SELECT C.firstname, C.lastname, R.reviewDesc, R.rating, R.createdAt FROM reviews R INNER JOIN customers C ON C.id = R.custId WHERE R.prodId=${req.params.id}`);
 
         // Send the grouped results in the response
         res.status(200).json({
