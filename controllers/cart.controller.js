@@ -151,9 +151,7 @@ async function checkout(req, res) {
             })
             .then((data) => {
                 products = data;
-                // return models.onlineTransaction.create(OLTransData, { transaction });
-                const date = new Date();
-                return models.sequelize.query(`INSERT INTO onlinetransaction (custId, location, remarks, status, createdAt, updatedAt) VALUES ('${OLTransData.custId}', '${OLTransData.location}', '${OLTransData.remarks}', '${OLTransData.status}','${date}', '${date}')`, { transaction })
+                return models.onlinetransactions.create(OLTransData, { transaction });
             })
             .then((result) => {
                 let productInfo = [];
@@ -266,7 +264,7 @@ async function checkout(req, res) {
 
 async function getAllPurchasesById(req, res) {
     try {
-        const result = await models.onlineTransaction.findAll({ where: { custId: req.params.id } }, { order: [['updatedAt', 'DESC']] });
+        const result = await models.onlinetransactions.findAll({ where: { custId: req.params.id } }, { order: [['updatedAt', 'DESC']] });
 
         if (result) {
             const promises = result.map(async (element) => {
