@@ -277,7 +277,7 @@ async function buyProductViaBarcode(req, res) {
         let tempArr = {
             transactionId: element.transactionId,
             prodId: element.id,
-            cashierId: 1,
+            cashierId: element.cashierId,
             currentPrice: element.price,
             currentSale: element.sale,
             currentComputedPrice: element.computedPrice,
