@@ -343,6 +343,26 @@ async function getAllProductsWithoutCategory(req, res) {
 }
 
 
+async function getTopProducts(req, res) {
+
+    try {
+        const result = await models.sequelize.query(`SELECT product, productDesc, COALESCE(SUM(quantity), 0) AS totalQuantity, imgFilename, MAX(createdAt) AS maxCreatedAt FROM ( SELECT P.product, P.productDesc, OS.quantity, P.imgFilename, P.createdAt FROM products P LEFT JOIN onlinesales OS ON OS.prodId = P.id LEFT JOIN onlinetransactions OT ON OS.OLTransID = OT.id UNION ALL SELECT P.product, P.productDesc, S.quantity, P.imgFilename, P.createdAt FROM sales S LEFT JOIN products P ON S.prodId = P.id ) AS combined_data GROUP BY product, productDesc ORDER BY totalQuantity DESC, maxCreatedAt ASC LIMIT 5`)
+
+        res.status(200).json({
+            success: true,
+            message: "Get top products is successfully loaded!",
+            result: result[0],
+        })
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong.",
+            error: error.message,
+        });
+    }
+
+}
+
 module.exports = {
     createProduct: createProduct,
     getAllProducts: getAllProducts,
@@ -350,5 +370,6 @@ module.exports = {
     getSpecificProductByBarcode: getSpecificProductByBarcode,
     updateProduct: updateProduct,
     buyProductViaBarcode: buyProductViaBarcode,
-    getAllProductsWithoutCategory: getAllProductsWithoutCategory
+    getAllProductsWithoutCategory: getAllProductsWithoutCategory,
+    getTopProducts: getTopProducts
 }
