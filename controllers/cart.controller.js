@@ -134,7 +134,9 @@ async function checkout(req, res) {
             status: 'Pending'
         }
 
-        console.log(OLTransData)
+        let resultSummary = [];
+
+        let transId = "";
 
         const activeCartIds = req.body.CartData
             .filter(item => item.active === 1)
@@ -157,14 +159,14 @@ async function checkout(req, res) {
                 let productInfo = [];
 
                 let cart = req.body.CartData.filter(item => item.active === 1);
-
+                transId = result.id;
 
                 cart.forEach(element => {
 
                     let prod = products[0].filter(x => x.id == element.prodId);
 
-                    models.product.update({ quantity: prod[0].quantity - element.quantity }, { where: { id: prod[0].id } });
-                    models.cart.destroy({ where: { id: element.cartId } });
+                    models.product.update({ quantity: prod[0].quantity - element.quantity }, { where: { id: prod[0].id } }, { transaction });
+                    models.cart.destroy({ where: { id: element.cartId } }, { transaction });
                     // console.log(element.cartId)
 
                     let tempCart = {
@@ -177,52 +179,160 @@ async function checkout(req, res) {
                         totalPrice: parseFloat(prod[0].computedPrice) * parseFloat(element.quantity)
                     }
 
+                    resultSummary.push(tempCart);
                     productInfo.push(tempCart);
                 });
 
-                return models.onlineSales.bulkCreate(productInfo);
+                return models.onlineSales.bulkCreate(productInfo, { transaction });
 
             }).then((result3) => {
-                return models.sequelize.query(`SELECT C.firstname, CA.email FROM customers C INNER JOIN cust_accounts CA ON C.id = CA.custId WHERE C.id = ${req.body.OLTransData.custId}`);
+                return models.sequelize.query(`SELECT C.firstname, CA.email FROM customers C INNER JOIN cust_accounts CA ON C.id = CA.custId WHERE C.id = ${req.body.OLTransData.custId}`, { transaction });
             })
             .then((final) => {
 
+                // return models.sequelize.query(`SELECT P.product, OS.quantity, OS.totalPrice FROM onlinesales OS INNER JOIN products P ON p.id = OS.prodId WHERE OS.OLTransID = ${transId}`, { transaction });
+                const currentDate = new Date();
 
-                const message = `<div style="width: 100%; max-width: 420px; color: #000; padding: 50px 30px; border: 1px solid #3f51b5; border-radius: 4px; font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif; margin: 50px auto; font-size: 18px">
-                            <h1 style="margin: 0 0 5px; color: #3f51b5 !important">SJ Renewable Energy</h1>
-                            <p style="margin: 0 0 15px;">Hi, ${final[0][0].firstname.toUpperCase()}</p>
-                            <p style="margin: 0 0 15px;">Thank you for purchasing in our online shop. You'll receive an email notification after we confirmed your order.</p>
-                            <p style="margin: 0;"><b>Note:</b> Do not reply to this email address. Thank you!</p>
-                        </div>`;
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                const dateFormat = new Intl.DateTimeFormat('en-US', options);
 
-                // Email content
-                const mailOptions = {
-                    from: process.env.GMAIL_EMAIL, // Sender's email address
-                    to: final[0][0].email, // Recipient's email address
-                    subject: 'SJRE - Online Store Purchase',
-                    html: message,
-                };
+                const formattedDate = dateFormat.format(currentDate);
 
+                // Create an array to store promises
+                const promises = [];
 
-                // Send the email
-                transporter.sendMail(mailOptions, (error, info) => {
-                    if (error) {
-                        res.status(500).json({
-                            status: false,
-                            message: "Something went wrong!",
-                            error: error.message
-                        })
-                    } else {
-
-                        transaction.commit();   /* commit all query made */
-
-                        res.status(201).json({
-                            success: true,
-                            message: "Online transaction successfully created!",
-                        });
-                    }
-
+                resultSummary.forEach(element => {
+                    const productNamePromise = models.sequelize.query(`SELECT product FROM products WHERE id=${element.prodId}`);
+                    promises.push(productNamePromise);
                 });
+
+                let orderSummary = "";
+                let grandtotal = 0;
+                // Use Promise.all to await all promises and execute the code after the loop
+                Promise.all(promises)
+                    .then(productNames => {
+                        productNames.forEach((productName, index) => {
+                            grandtotal += resultSummary[index].totalPrice;
+                            orderSummary += `<tr>
+                                <td>${productName[0][0].product}</td>
+                                <td>${resultSummary[index].quantity}</td>
+                                <td>₱${resultSummary[index].totalPrice}</td>
+                             </tr>`;
+                        });
+
+                        console.log("=================================")
+                        console.log(resultSummary)
+                        console.log("=================================")
+
+                        // Now you can use orderSummary in your email message and send the email here
+
+                        const message = `<div
+                                            style="display: block; width: 100%; max-width: 600px; margin: auto; padding: 10px 10px; background: #fff; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #1b1b1b !important; text-align: justify; font-weight: 400;">
+                                    
+                                            <div style="text-align: center;">
+                                                <img src="https://lh3.google.com/u/0/d/1G0LD-J9v_ncB9LRQrIPeqqKAZ4g189L2=w1920-h959-iv2" alt="SJ_logo.png" width="120">
+                                            </div>
+                                    
+                                            <p>Dear ${final[0][0].firstname.toUpperCase()},</p>
+                                    
+                                            <p style="text-indent: 45px; line-height: 1.5;">We are delighted to inform you that your order has been successfully processed. Thank you for choosing SJ Renewable Energy for your purchase. Here are the essential details:</p>
+                                    
+                                            <br>
+                                    
+                                            <b>Order Details: </b>
+                                            <p style="margin: 0 0 5px">Order Date: ${formattedDate}</p>
+                                            <p style="margin: 5px 0 5px">Contact No: ${OLTransData.mobileNo}</p>
+                                            <p style="margin: 0 0 5px">Shipping Address: ${OLTransData.location}</p>
+                                    
+                                            <br>
+                                    
+                                            <b>Order Summary: </b>
+                                            <table style="width: 100%; text-align: left; border-collapse: collapse; margin-top: 5px;">
+                                                <thead>
+                                                    <tr>
+                                                        <td style="font-weight: 600;">Product</td>
+                                                        <td style="font-weight: 600;">Quantity</td>
+                                                        <td style="font-weight: 600;">Price</td>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${orderSummary}
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr style="border-top: 1px solid gray; padding: 10px 0 0;">
+                                                        <td colspan="2" style="font-weight: 600;">Grand Total</td>
+                                                        <td>₱${grandtotal}</td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                    
+                                    
+                                            <br>
+                                    
+                                            <p style="line-height: 1.5">Your order is currently being processed, and we will notify you via email once it has been shipped. If you have any questions or need assistance with your order, please contact our customer support team at <b><a href="mailto:${process.env.GMAIL_INQUIRIES}">${process.env.GMAIL_INQUIRIES}</a></b>.</p>
+                                    
+                                            <br>
+                                    
+                                            <p style="margin: 0 0 5px;">Best Regards,</p>
+                                            <p style="margin: 0 0 5px;"><b>SJ Renewable Energy</b></p>
+                                    
+                                            <br>
+                                            <p style="color: red; margin: 0 0 10px; text-align: center; font-weight: 600;">THIS EMAIL IS AN AUTOMATED. PLEASE DO NOT REPLY TO THIS EMAIL</p>
+                                    
+                                        </div>`
+
+
+                        // Email content
+                        const mailOptions = {
+                            from: process.env.GMAIL_EMAIL, // Sender's email address
+                            to: final[0][0].email, // Recipient's email address
+                            subject: 'Order Confirmation  Your Order is Successful',
+                            html: message,
+                        };
+
+
+                        // Send the email
+                        transporter.sendMail(mailOptions, (error, info) => {
+                            if (error) {
+                                res.status(500).json({
+                                    status: false,
+                                    message: "Something went wrong!",
+                                    error: error.message
+                                })
+                            } else {
+
+                                transaction.commit();   /* commit all query made */
+
+                                res.status(201).json({
+                                    success: true,
+                                    message: "Online transaction successfully created!",
+                                });
+                            }
+
+                        });
+                    })
+                    .catch(error => {
+                        console.error("An error occurred while fetching product names:", error);
+                        // Handle the error as needed
+                    });
+
+                // let orderSummary = "";
+
+                // resultSummary.forEach(async element => {
+                //     console.log("$$$$$$$$$$$$$$")
+                //     let productName = await models.sequelize.query(`SELECT product FROM products WHERE id=${element.prodId}`);
+                //     orderSummary += `<tr>
+                //                         <td>${productName[0][0].product}</td>
+                //                         <td>${element.quantity}</td>
+                //                         <td>${element.totalPrice}</td>
+                //                      </tr>`;
+                // });
+
+                // console.log("=================================")
+                // console.log(resultSummary)
+                // console.log("=================================")
+
+
 
 
             })

@@ -1,5 +1,9 @@
 const ExcelJS = require('exceljs');
 const models = require('../models');
+const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path')
+const { Sequelize, QueryTypes, QueryError } = require('sequelize');
 
 async function downloadReports(req, res) {
   try {
@@ -171,6 +175,191 @@ async function downloadReports(req, res) {
   }
 }
 
+
+async function downloadPDFReport(req, res) {
+  try {
+
+    let DATE = "some value";
+    let Numberorders = "some value";
+    let percentage = "some value";
+
+
+    let cashierResult = await models.sequelize.query("SELECT c.id AS id, c.firstname, c.lastname, c.username, SUM(sales.totalPrice) AS sales, c.status FROM cashiers c LEFT JOIN sales ON c.id = sales.cashierId GROUP BY c.id, c.username, c.firstname, c.lastname, c.status ORDER BY c.status DESC", { type: QueryTypes.SELECT });
+
+    let cashierTable = "";
+
+    cashierResult.forEach(element => {
+      cashierTable += `<tr>
+                        <td style="border: 1px solid black; padding: 5px;">${element.firstname.replace(/\b\w/g, (match) => match.toUpperCase())} ${element.lastname.replace(/\b\w/g, (match) => match.toUpperCase())}</td>
+                        <td style="border: 1px solid black; padding: 5px;">₱ ${element.sales.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
+                       </tr>`
+    });
+
+
+
+    let inventoryResult = await models.sequelize.query(`SELECT * FROM products`);
+    let inventoryTable = "";
+
+    inventoryResult[0].forEach(element => {
+      inventoryTable += `<tr>
+                            <td style="border: 1px solid black; padding: 5px;">${element.product}</td>
+                            <td style="border: 1px solid black; padding: 5px;">₱ ${element.price.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
+                            <td style="border: 1px solid black; padding: 5px;">${element.sale}%</td>
+                            <td style="border: 1px solid black; padding: 5px;">₱ ${element.computedPrice.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
+                            <td style="border: 1px solid black; padding: 5px;">${element.quantity}</td>
+                         </tr>`
+    });
+
+
+
+    let htmlContent = `<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+    </head>
+    
+    <body>
+    
+        <div
+            style="display: block; width: 100%; max-width: 700px; margin: auto; padding: -100px 10px 10px 10px; background: #fff; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12px; color: #1b1b1b !important; text-align: justify;">
+    
+            <div style="text-align: center;">
+                <img src="data:image/jpeg;base64,${
+                  fs.readFileSync(process.cwd() + "\\uploads\\images\\SJ_logo.png").toString('base64')
+                }" alt="alt text" width="120" />
+                <h2 style="margin: -20px 0 0">SJ RENEWABLE ENERGY</h2>
+                <p style="margin: 0; font-weight: 700;">OVERALL SUMMARY REPORT</p>
+            </div>
+    
+            <br>
+
+            <p style="font-weight: 800;">ONLINE TRANSACTION REPORT</p>
+            <p style="text-indent: 45px;">The Online Transaction Report provides a comprehensive overview of online
+                transactions from <b>${DATE}</b> to <b>${DATE}</b>. It encompasses transactions that fall into three
+                categories: completed, declined, and pending, all of which occurred during the specified date range.</p>
+            <p style="text-indent: 45px;">The Online Store has a total of <b>${Numberorders}</b> between <b>${DATE}</b> and
+    <b>${DATE}</b>.Among these requests, <b>${percentage}%</b> have been successfully completed,
+      <b>${percentage}%</b> were declined, and the remaining <b> ${percentage}%</b> are currently pending.</p>
+
+        <br>
+
+          <p style="font-weight: 800;">PHYSICAL AND ONLINE STORE SALES REPORT</p>
+          <p style="text-indent: 45px;">The table below shows the sales for both physical and online store. Based on the
+            data shown, physical store have <b>${percentage}%</b> while online store have <b>${percentage}%</b> out of
+            overall sales pesos overall sales.</p>
+
+          <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 12px !important;">
+            <thead>
+              <tr>
+                <th style="border: 1px solid black; padding: 5px;">Product</th>
+                <th style="border: 1px solid black; padding: 5px;">Price</th>
+                <th style="border: 1px solid black; padding: 5px;">Quantity</th>
+                <th style="border: 1px solid black; padding: 5px;">Physical Store Sales</th>
+                <th style="border: 1px solid black; padding: 5px;">Online Store Sales</th>
+                <th style="border: 1px solid black; padding: 5px;">Overall Sales</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid black; padding: 5px;">Sample Product Name</td>
+                <td style="border: 1px solid black; padding: 5px;">25000</td>
+                <td style="border: 1px solid black; padding: 5px;">5</td>
+                <td style="border: 1px solid black; padding: 5px;">10,000</td>
+                <td style="border: 1px solid black; padding: 5px;">15,000</td>
+                <td style="border: 1px solid black; padding: 5px;">25,000</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" style="border: 1px solid black; padding: 5px;">
+                  <b>Grand Total Sales</b>
+                </td>
+                <td style="border: 1px solid black; padding: 5px;">10,000</td>
+                <td style="border: 1px solid black; padding: 5px;">15,000</td>
+                <td style="border: 1px solid black; padding: 5px;">25,000</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <br>
+
+            <p style="font-weight: 800;">CASHIER REPORT</p>
+            <p style="text-indent: 45px;">This table represents the overall sales made by the cashier/s in the physical store from <b>${DATE}</b> to <b>${DATE}</b>.</p>
+
+            <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 12px !important;">
+              <thead>
+                <tr>
+                  <th style="border: 1px solid black; padding: 5px;">Full Name</th>
+                  <th style="border: 1px solid black; padding: 5px;">Overall Sales</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${cashierTable}
+              </tbody>
+            </table>
+
+            <br>
+
+              <p style="font-weight: 800;">INVENTORY REPORT</p>
+              <p style="text-indent: 45px;">This table shows the list of the products, and their corresponding current price, sale in percentage, computed price after the discount, and remaining stocks as of <b>${DATE}</b>.</p>
+
+              <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 12px !important;">
+                <thead>
+                  <tr>
+                    <th style="border: 1px solid black; padding: 5px;">Product</th>
+                    <th style="border: 1px solid black; padding: 5px;">Current Price</th>
+                    <th style="border: 1px solid black; padding: 5px;">Sale(%)</th>
+                    <th style="border: 1px solid black; padding: 5px;">Computed Price</th>
+                    <th style="border: 1px solid black; padding: 5px;">Remaining Stocks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${inventoryTable}
+                </tbody>
+              </table>
+
+            </div>
+
+          </body>
+
+        </html>`;
+
+
+
+    const browser = await puppeteer.launch({ headless: 'new' });
+    const page = await browser.newPage();
+    await page.setContent(htmlContent);
+
+    // // Generate PDF
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '15px',
+        bottom: '45px'
+      }
+    });
+
+    await browser.close();
+    // Set response headers for downloading
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="output.pdf"');
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.log(error)
+
+    res.status(500).json({
+      status: false,
+      message: "Something went wrong!",
+      error: error.message
+    });
+  }
+
+
+}
+
 module.exports = {
-  downloadReports: downloadReports
+  downloadReports: downloadReports,
+  downloadPDFReport: downloadPDFReport
 };
