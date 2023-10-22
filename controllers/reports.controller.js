@@ -179,12 +179,88 @@ async function downloadReports(req, res) {
 async function downloadPDFReport(req, res) {
   try {
 
+    console.log("============================")
+    console.log(req.body.dateRange.end)
+    console.log("============================")
+
+    let dateStart = req.body.dateRange.start;
+    const date1 = new Date(dateStart);
+    const options1 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDate1 = date1.toLocaleDateString('en-US', options1);
+
+    let dateEnd = req.body.dateRange.end;
+    const date2 = new Date(dateEnd);
+    const options2 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDate2 = date2.toLocaleDateString('en-US', options2);
+
     let DATE = "some value";
-    let Numberorders = "some value";
     let percentage = "some value";
+    const currentDate = new Date();
+
+    const options3 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const dateFormat = new Intl.DateTimeFormat('en-US', options3);
+
+    const formattedDate = dateFormat.format(currentDate);
 
 
-    let cashierResult = await models.sequelize.query("SELECT c.id AS id, c.firstname, c.lastname, c.username, SUM(sales.totalPrice) AS sales, c.status FROM cashiers c LEFT JOIN sales ON c.id = sales.cashierId GROUP BY c.id, c.username, c.firstname, c.lastname, c.status ORDER BY c.status DESC", { type: QueryTypes.SELECT });
+    let query1 = await models.sequelize.query(`SELECT
+                                                  SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) AS totalPending,
+                                                  SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS totalCompleted,
+                                                  SUM(CASE WHEN status = 'Declined' THEN 1 ELSE 0 END) AS totalDeclined,
+                                                  COUNT(*) as totalTransactions
+                                              FROM 
+                                                onlinetransactions
+                                              WHERE 
+                                                createdAt BETWEEN '${dateStart}' AND '${dateEnd}'`)
+
+    let query2 = await models.sequelize.query(`SELECT c.id AS id, c.firstname, c.lastname, c.username, SUM(sales.totalPrice) AS sales, c.status FROM cashiers c LEFT JOIN sales ON c.id = sales.cashierId WHERE sales.createdAt BETWEEN '${dateStart}' AND '${dateEnd}' GROUP BY c.id, c.username, c.firstname, c.lastname, c.status ORDER BY c.status DESC`, { type: QueryTypes.SELECT });
+
+    let query3 = await models.sequelize.query(`SELECT * FROM products`);
+
+    let query4 = await models.sequelize.query(`SELECT
+                                                  product,
+                                                  productDesc,
+                                                  COALESCE(SUM(quantity), 0) AS totalQuantity,
+                                                  COALESCE(SUM(CASE WHEN source = 'sales' THEN totalPrice ELSE 0 END), 0) AS physicalStoreSales,
+                                                  COALESCE(SUM(CASE WHEN source = 'onlinesales' THEN totalPrice ELSE 0 END), 0) AS onlineStoreSales,
+                                                  COALESCE(SUM(totalPrice), 0) AS overallSales,
+                                                  MAX(createdAt) AS maxCreatedAt
+                                              FROM (
+                                                  SELECT
+                                                      P.product,
+                                                      P.productDesc,
+                                                      COALESCE(OS.quantity, 0) AS quantity,
+                                                      COALESCE(OS.totalPrice, 0) AS totalPrice,
+                                                      P.imgFilename,
+                                                      P.createdAt,
+                                                      'onlinesales' AS source
+                                                  FROM products P
+                                                  LEFT JOIN onlinesales OS ON OS.prodId = P.id
+                                                  LEFT JOIN onlinetransactions OT ON OS.OLTransID = OT.id
+                                                  WHERE P.status = 1 AND (OS.createdAt BETWEEN '${dateStart}' AND '${dateEnd}' OR OS.createdAt IS NULL)
+                                                  UNION ALL
+                                                  SELECT
+                                                      P.product,
+                                                      P.productDesc,
+                                                      COALESCE(S.quantity, 0) AS quantity,
+                                                      COALESCE(S.totalPrice, 0) AS totalPrice,
+                                                      P.imgFilename,
+                                                      P.createdAt,
+                                                      'sales' AS source
+                                                  FROM products P
+                                                  LEFT JOIN sales S ON S.prodId = P.id
+                                                  WHERE P.status = 1 AND (S.createdAt BETWEEN '${dateStart}' AND '${dateEnd}' OR S.createdAt IS NULL)
+                                              ) AS combined_data
+                                              GROUP BY
+                                                  product,
+                                                  productDesc,
+                                                  imgFilename
+                                              ORDER BY
+                                                  totalQuantity DESC,
+                                                  maxCreatedAt ASC`);
+
+
+    const [onlineTransactionStatus, cashierResult, inventoryResult, physicalOnlineSalesResult] = await Promise.all([query1, query2, query3, query4]);
 
     let cashierTable = "";
 
@@ -197,7 +273,6 @@ async function downloadPDFReport(req, res) {
 
 
 
-    let inventoryResult = await models.sequelize.query(`SELECT * FROM products`);
     let inventoryTable = "";
 
     inventoryResult[0].forEach(element => {
@@ -209,6 +284,35 @@ async function downloadPDFReport(req, res) {
                             <td style="border: 1px solid black; padding: 5px;">${element.quantity}</td>
                          </tr>`
     });
+
+
+
+
+
+    let physicalOnlineSalesTable = "";
+    let totalPhysicalStoreSales = 0;
+    let totalOnlineStoreSales = 0;
+
+    physicalOnlineSalesResult[0].forEach(element => {
+      physicalOnlineSalesTable += `<tr>
+                                    <td style="border: 1px solid black; padding: 5px;">${element.product}</td>
+                                    <td style="border: 1px solid black; padding: 5px;">${element.totalQuantity}</td>
+                                    <td style="border: 1px solid black; padding: 5px;">₱ ${element.physicalStoreSales.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
+                                    <td style="border: 1px solid black; padding: 5px;">₱ ${element.onlineStoreSales.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
+                                    <td style="border: 1px solid black; padding: 5px;">₱ ${element.overallSales.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
+                                  </tr>`
+      totalPhysicalStoreSales += element.physicalStoreSales;
+      totalOnlineStoreSales += element.onlineStoreSales;
+    });
+
+    physicalOnlineSalesTable += `<tr>
+                                    <td colspan="2" style="border: 1px solid black; padding: 5px;">
+                                        <b>Grand Total Sales</b>
+                                    </td>
+                                    <td style="border: 1px solid black; padding: 5px;">₱ ${totalPhysicalStoreSales.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
+                                    <td style="border: 1px solid black; padding: 5px;">₱ ${totalOnlineStoreSales.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
+                                    <td style="border: 1px solid black; padding: 5px;">₱ ${(totalPhysicalStoreSales + totalOnlineStoreSales).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
+                                </tr>`
 
 
 
@@ -225,9 +329,8 @@ async function downloadPDFReport(req, res) {
             style="display: block; width: 100%; max-width: 700px; margin: auto; padding: -100px 10px 10px 10px; background: #fff; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12px; color: #1b1b1b !important; text-align: justify;">
     
             <div style="text-align: center;">
-                <img src="data:image/jpeg;base64,${
-                  fs.readFileSync(process.cwd() + "\\uploads\\images\\SJ_logo.png").toString('base64')
-                }" alt="alt text" width="120" />
+                <img src="data:image/jpeg;base64,${fs.readFileSync(process.cwd() + "\\uploads\\images\\SJ_logo.png").toString('base64')
+      }" alt="alt text" width="120" />
                 <h2 style="margin: -20px 0 0">SJ RENEWABLE ENERGY</h2>
                 <p style="margin: 0; font-weight: 700;">OVERALL SUMMARY REPORT</p>
             </div>
@@ -236,24 +339,23 @@ async function downloadPDFReport(req, res) {
 
             <p style="font-weight: 800;">ONLINE TRANSACTION REPORT</p>
             <p style="text-indent: 45px;">The Online Transaction Report provides a comprehensive overview of online
-                transactions from <b>${DATE}</b> to <b>${DATE}</b>. It encompasses transactions that fall into three
+                transactions from <b>${formattedDate1}</b> to <b>${formattedDate2}</b>. It encompasses transactions that fall into three
                 categories: completed, declined, and pending, all of which occurred during the specified date range.</p>
-            <p style="text-indent: 45px;">The Online Store has a total of <b>${Numberorders}</b> between <b>${DATE}</b> and
-    <b>${DATE}</b>.Among these requests, <b>${percentage}%</b> have been successfully completed,
-      <b>${percentage}%</b> were declined, and the remaining <b> ${percentage}%</b> are currently pending.</p>
+            <p style="text-indent: 45px;">The Online Store has a total of <b>${onlineTransactionStatus[0][0].totalTransactions}</b> between <b>${formattedDate1}</b> and
+    <b>${formattedDate2}</b>.Among these requests, <b>${((onlineTransactionStatus[0][0].totalCompleted / onlineTransactionStatus[0][0].totalTransactions) * 100).toFixed(2) !== 'NaN' ? ((onlineTransactionStatus[0][0].totalCompleted / onlineTransactionStatus[0][0].totalTransactions) * 100).toFixed(2) : 0}%</b> have been successfully completed,
+      <b>${((onlineTransactionStatus[0][0].totalDeclined / onlineTransactionStatus[0][0].totalTransactions) * 100).toFixed(2) !== 'NaN' ? ((onlineTransactionStatus[0][0].totalDeclined / onlineTransactionStatus[0][0].totalTransactions) * 100).toFixed(2) : 0}%</b> were declined, and the remaining <b>${((onlineTransactionStatus[0][0].totalPending / onlineTransactionStatus[0][0].totalTransactions) * 100).toFixed(2) !== 'NaN' ? ((onlineTransactionStatus[0][0].totalPending / onlineTransactionStatus[0][0].totalTransactions) * 100).toFixed(2) : 0}%</b> are currently pending.</p>
 
         <br>
 
           <p style="font-weight: 800;">PHYSICAL AND ONLINE STORE SALES REPORT</p>
           <p style="text-indent: 45px;">The table below shows the sales for both physical and online store. Based on the
-            data shown, physical store have <b>${percentage}%</b> while online store have <b>${percentage}%</b> out of
-            overall sales pesos overall sales.</p>
+            data shown, physical store have <b>${!isNaN((totalPhysicalStoreSales / (totalPhysicalStoreSales + totalOnlineStoreSales)) * 100) ? ((totalPhysicalStoreSales / (totalPhysicalStoreSales + totalOnlineStoreSales)) * 100).toFixed(2) : 0}%</b> while online store have <b>${!isNaN((totalOnlineStoreSales / (totalPhysicalStoreSales + totalOnlineStoreSales)) * 100) ? ((totalOnlineStoreSales / (totalPhysicalStoreSales + totalOnlineStoreSales)) * 100).toFixed(2) : 0}%</b> out of
+            <b>${(totalPhysicalStoreSales + totalOnlineStoreSales).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</b> pesos overall sales.</p>
 
           <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 12px !important;">
             <thead>
               <tr>
                 <th style="border: 1px solid black; padding: 5px;">Product</th>
-                <th style="border: 1px solid black; padding: 5px;">Price</th>
                 <th style="border: 1px solid black; padding: 5px;">Quantity</th>
                 <th style="border: 1px solid black; padding: 5px;">Physical Store Sales</th>
                 <th style="border: 1px solid black; padding: 5px;">Online Store Sales</th>
@@ -261,31 +363,14 @@ async function downloadPDFReport(req, res) {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td style="border: 1px solid black; padding: 5px;">Sample Product Name</td>
-                <td style="border: 1px solid black; padding: 5px;">25000</td>
-                <td style="border: 1px solid black; padding: 5px;">5</td>
-                <td style="border: 1px solid black; padding: 5px;">10,000</td>
-                <td style="border: 1px solid black; padding: 5px;">15,000</td>
-                <td style="border: 1px solid black; padding: 5px;">25,000</td>
-              </tr>
+              ${physicalOnlineSalesTable}
             </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="3" style="border: 1px solid black; padding: 5px;">
-                  <b>Grand Total Sales</b>
-                </td>
-                <td style="border: 1px solid black; padding: 5px;">10,000</td>
-                <td style="border: 1px solid black; padding: 5px;">15,000</td>
-                <td style="border: 1px solid black; padding: 5px;">25,000</td>
-              </tr>
-            </tfoot>
           </table>
 
           <br>
 
             <p style="font-weight: 800;">CASHIER REPORT</p>
-            <p style="text-indent: 45px;">This table represents the overall sales made by the cashier/s in the physical store from <b>${DATE}</b> to <b>${DATE}</b>.</p>
+            <p style="text-indent: 45px;">This table represents the overall sales made by the cashier/s in the physical store from <b>${formattedDate1}</b> to <b>${formattedDate2}</b>.</p>
 
             <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 12px !important;">
               <thead>
@@ -302,7 +387,7 @@ async function downloadPDFReport(req, res) {
             <br>
 
               <p style="font-weight: 800;">INVENTORY REPORT</p>
-              <p style="text-indent: 45px;">This table shows the list of the products, and their corresponding current price, sale in percentage, computed price after the discount, and remaining stocks as of <b>${DATE}</b>.</p>
+              <p style="text-indent: 45px;">This table shows the list of the products, and their corresponding current price, sale in percentage, computed price after the discount, and remaining stocks as of <b>${formattedDate}</b>.</p>
 
               <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 12px !important;">
                 <thead>
