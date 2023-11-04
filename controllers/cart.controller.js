@@ -127,18 +127,27 @@ async function checkout(req, res) {
     try {
 
         const OLTransData = {
-            custId: req.body.OLTransData.custId,
-            location: req.body.OLTransData.location,
-            mobileNo: req.body.OLTransData.mobileNo,
+            custId: req.body.custId,
+            location: req.body.location,
+            mobileNo: req.body.mobileNo,
             remarks: '',
-            status: 'Pending'
+            status: 'Pending',
+            paymentFile: req.file.filename
         }
+
+        console.log("==========================")
+        console.log("REQUEST BODY")
+        console.log(req.body)
+        console.log("==========================")
+        console.log("REQUEST FILE")
+        console.log(req.file)
+        console.log("==========================")
 
         let resultSummary = [];
 
         let transId = "";
 
-        const activeCartIds = req.body.CartData
+        const activeCartIds = JSON.parse(req.body.CartData)
             .filter(item => item.active === 1)
             .map(item => item.prodId);
 
@@ -158,7 +167,7 @@ async function checkout(req, res) {
             .then((result) => {
                 let productInfo = [];
 
-                let cart = req.body.CartData.filter(item => item.active === 1);
+                let cart = JSON.parse(req.body.CartData).filter(item => item.active === 1);
                 transId = result.id;
 
                 cart.forEach(element => {
@@ -167,7 +176,6 @@ async function checkout(req, res) {
 
                     models.product.update({ quantity: prod[0].quantity - element.quantity }, { where: { id: prod[0].id } }, { transaction });
                     models.cart.destroy({ where: { id: element.cartId } }, { transaction });
-                    // console.log(element.cartId)
 
                     let tempCart = {
                         OLTransID: result.id,
@@ -186,7 +194,7 @@ async function checkout(req, res) {
                 return models.onlineSales.bulkCreate(productInfo, { transaction });
 
             }).then((result3) => {
-                return models.sequelize.query(`SELECT C.firstname, CA.email FROM customers C INNER JOIN cust_accounts CA ON C.id = CA.custId WHERE C.id = ${req.body.OLTransData.custId}`, { transaction });
+                return models.sequelize.query(`SELECT C.firstname, CA.email FROM customers C INNER JOIN cust_accounts CA ON C.id = CA.custId WHERE C.id = ${req.body.custId}`, { transaction });
             })
             .then((final) => {
 
@@ -219,12 +227,6 @@ async function checkout(req, res) {
                                 <td>₱${resultSummary[index].totalPrice}</td>
                              </tr>`;
                         });
-
-                        console.log("=================================")
-                        console.log(resultSummary)
-                        console.log("=================================")
-
-                        // Now you can use orderSummary in your email message and send the email here
 
                         const message = `<div
                                             style="display: block; width: 100%; max-width: 600px; margin: auto; padding: 10px 10px; background: #fff; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #1b1b1b !important; text-align: justify; font-weight: 400;">
@@ -313,27 +315,7 @@ async function checkout(req, res) {
                     })
                     .catch(error => {
                         console.error("An error occurred while fetching product names:", error);
-                        // Handle the error as needed
                     });
-
-                // let orderSummary = "";
-
-                // resultSummary.forEach(async element => {
-                //     console.log("$$$$$$$$$$$$$$")
-                //     let productName = await models.sequelize.query(`SELECT product FROM products WHERE id=${element.prodId}`);
-                //     orderSummary += `<tr>
-                //                         <td>${productName[0][0].product}</td>
-                //                         <td>${element.quantity}</td>
-                //                         <td>${element.totalPrice}</td>
-                //                      </tr>`;
-                // });
-
-                // console.log("=================================")
-                // console.log(resultSummary)
-                // console.log("=================================")
-
-
-
 
             })
             .catch((error) => {

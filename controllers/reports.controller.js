@@ -193,8 +193,6 @@ async function downloadPDFReport(req, res) {
     const options2 = { year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate2 = date2.toLocaleDateString('en-US', options2);
 
-    let DATE = "some value";
-    let percentage = "some value";
     const currentDate = new Date();
 
     const options3 = { year: 'numeric', month: 'long', day: 'numeric' };

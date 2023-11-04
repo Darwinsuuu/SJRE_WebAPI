@@ -39,17 +39,30 @@ async function getOrderByStatus(req, res) {
 async function getOrderById(req, res) {
     try {
 
-        const result = await models.sequelize.query(`SELECT OT.id, C.firstname, C.lastname, CA.email, OT.location, C.mobileNo, OT.remarks, OT.status, OT.createdAt, OT.updatedAt from onlinetransactions OT INNER JOIN customers C ON OT.custId = C.id INNER JOIN cust_accounts CA ON CA.custId = C.id WHERE OT.id='${req.params.id}' ORDER BY OT.createdAt`);
+        const result = await models.sequelize.query(`SELECT OT.id, C.firstname, C.lastname, CA.email, OT.location, C.mobileNo, OT.remarks, OT.status, OT.paymentFile, OT.createdAt, OT.updatedAt from onlinetransactions OT INNER JOIN customers C ON OT.custId = C.id INNER JOIN cust_accounts CA ON CA.custId = C.id WHERE OT.id='${req.params.id}' ORDER BY OT.createdAt`);
 
 
         // const orders = await models.onlineSales.findAll({where: {OLTransID: req.params.id} })
         const orders = await models.sequelize.query(`SELECT P.product, OS.quantity, OS.totalPrice FROM onlineSales OS INNER JOIN products P ON OS.prodId = P.id WHERE OS.OLTransID=${req.params.id}`)
+
+        console.log(
+            {
+                id: result[0][0].id,
+                fullname: `${result[0][0].firstname} ${result[0][0].lastname}`,
+                mobileNo: result[0][0].mobileNo,
+                address: result[0][0].location,
+                paymentFile: result[0][0].paymentFile,
+                email: result[0][0].email,
+                orderList: orders[0]
+            }
+        )
 
         res.status(200).json({
             id: result[0][0].id,
             fullname: `${result[0][0].firstname} ${result[0][0].lastname}`,
             mobileNo: result[0][0].mobileNo,
             address: result[0][0].location,
+            paymentFile: result[0][0].paymentFile,
             email: result[0][0].email,
             orderList: orders[0]
         })
@@ -79,7 +92,7 @@ async function updateOrderTransaction(req, res) {
         await models.onlineTransaction.update(data, { where: { id: req.body.id } });
 
         console.log("==================================")
-        const custId = await models.onlineTransaction.findAll({where: {id: req.body.id}});
+        const custId = await models.onlineTransaction.findAll({ where: { id: req.body.id } });
 
         console.log(`custId ${custId[0].custId}`)
         console.log("==================================")
@@ -152,9 +165,9 @@ async function updateOrderTransaction(req, res) {
                             <br>
                             <p style="color: red; margin: 0 0 10px; text-align: center; font-weight: 600;">THIS EMAIL IS AN AUTOMATED. PLEASE DO NOT REPLY TO THIS EMAIL</p>
 
-                        </div>` 
-                        : 
-                        `<div
+                        </div>`
+            :
+            `<div
                         style="display: block; width: 100%; max-width: 600px; margin: auto; padding: 10px 10px; background: #fff; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #1b1b1b !important; text-align: justify; font-weight: 400;">
                 
                         <div style="text-align: center;">
@@ -204,7 +217,7 @@ async function updateOrderTransaction(req, res) {
                     error: error.message
                 })
             } else {
-                
+
                 res.status(201).json({
                     success: true
                 });
