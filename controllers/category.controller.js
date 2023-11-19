@@ -71,7 +71,7 @@ function updateCategory(req, res) {
 
 function getAllCategoryList(req, res) {
 
-    models.categories.findAll().then((result) => {
+    models.categories.findAll({ where: {status: 1} }).then((result) => {
         res.status(200).json({
             success: true,
             count: result.length,
