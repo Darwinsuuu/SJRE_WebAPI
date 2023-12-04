@@ -23,7 +23,6 @@ async function createCustomer(req, res) {
                     street: req.body.addressInfo.street,
                     houseNo: req.body.addressInfo.houseNo,
                     zipCode: req.body.addressInfo.zipCode,
-                    fullAddress: req.body.addressInfo.fullAddress
                 }
 
                 let custAccount = {
@@ -98,12 +97,32 @@ async function getPersonalInformation(req, res) {
 
     try {
 
-        const result = await models.customers.findOne({ where: { id: req.params.id } });
+        // const result = await models.customers.findOne({ where: { id: req.params.id } });
+        const result = await models.sequelize.query(`SELECT 
+                                                        C.mobileNo, 
+                                                        CONCAT(
+                                                            C.houseNo, ", ", 
+                                                            C.street, ", ",   -- Added comma here
+                                                            C.subdivision, ", ", 
+                                                            B.brgyDesc, ", ", 
+                                                            CM.citymunDesc, ", ",  
+                                                            P.provDesc, ", ", 
+                                                            R.regDesc, ", ", 
+                                                            C.zipCode
+                                                        ) as fullAddress
+                                                    FROM 
+                                                        customers C
+                                                        INNER JOIN refregion R ON C.region = R.regCode
+                                                        INNER JOIN refprovince P ON C.province = P.provCode
+                                                        INNER JOIN refcitymun CM ON C.city = CM.citymunCode
+                                                        INNER JOIN refbrgy B ON C.barangay = B.brgyCode
+                                                    WHERE 
+                                                        C.id = ${req.params.id}`);
 
         res.status(200).json({
             success: true,
             message: "Get personal info is successfully loaded!",
-            result: result,
+            result: result[0][0],
         });
 
     } catch (error) {
@@ -188,7 +207,6 @@ async function updateAddressInformation(req, res) {
             street: req.body.street,
             houseNo: req.body.houseNo,
             zipCode: req.body.zipCode,
-            fullAddress: req.body.fullAddress
         }
 
 
@@ -267,7 +285,7 @@ async function newsletter(req, res) {
 async function getUserInfoByEmail(req, res) {
     try {
 
-        const result = await models.cust_account.findOne({where: { email: req.params.email }})
+        const result = await models.cust_account.findOne({ where: { email: req.params.email } })
 
         res.status(200).json(result);
 

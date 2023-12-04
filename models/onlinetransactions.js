@@ -17,7 +17,8 @@ module.exports = (sequelize, DataTypes) => {
     custId: DataTypes.INTEGER,
     location: DataTypes.TEXT,
     remarks: DataTypes.TEXT,
-    status: DataTypes.STRING
+    status: DataTypes.STRING,
+    paymentFile: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'onlinetransactions',
