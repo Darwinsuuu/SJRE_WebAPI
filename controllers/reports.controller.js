@@ -442,7 +442,127 @@ async function downloadPDFReport(req, res) {
 
 }
 
+
+
+
+async function downloadPDFReportCashier(req, res) {
+  try {
+
+
+    console.log(req.body)
+
+    let dateStart = req.body.data.start;
+    const date1 = new Date(dateStart);
+    const options1 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDate1 = date1.toLocaleDateString('en-US', options1);
+
+    let dateEnd = req.body.data.end;
+    const date2 = new Date(dateEnd);
+    const options2 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDate2 = date2.toLocaleDateString('en-US', options2);
+
+    const currentDate = new Date();
+
+    const options3 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const dateFormat = new Intl.DateTimeFormat('en-US', options3);
+
+    const formattedDate = dateFormat.format(currentDate);
+
+
+
+    let query2 = await models.sequelize.query(`SELECT c.id AS id, c.firstname, c.lastname, c.username, SUM(sales.totalPrice) AS sales, c.status FROM cashiers c LEFT JOIN sales ON c.id = sales.cashierId WHERE sales.createdAt BETWEEN '${dateStart}' AND '${dateEnd}' AND c.id = '${req.body.data.id}' GROUP BY c.id, c.username, c.firstname, c.lastname, c.status ORDER BY c.status DESC`, { type: QueryTypes.SELECT });
+
+
+    const [cashierResult] = await Promise.all([query2]);
+
+    let cashierTable = "";
+
+    cashierResult.forEach(element => {
+      cashierTable += `<tr>
+                        <td style="border: 1px solid black; padding: 5px;">${element.firstname.replace(/\b\w/g, (match) => match.toUpperCase())} ${element.lastname.replace(/\b\w/g, (match) => match.toUpperCase())}</td>
+                        <td style="border: 1px solid black; padding: 5px;">₱ ${element.sales.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
+                       </tr>`
+    });
+
+
+    let htmlContent = `<html>
+                          <head>
+                              <meta charset="UTF-8">
+                              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                              <title>Document</title>
+                          </head>
+                          
+                          <body>
+                          
+                              <div
+                                  style="display: block; width: 100%; max-width: 700px; margin: auto; padding: -100px 10px 10px 10px; background: #fff; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12px; color: #1b1b1b !important; text-align: justify;">
+                          
+                                  <div style="text-align: center;">
+                                      <img src="data:image/jpeg;base64,${fs.readFileSync(process.cwd() + "\\uploads\\images\\SJ_logo.png").toString('base64')}" alt="alt text" width="120" />
+                                      <h2 style="margin: -20px 0 0">SJ RENEWABLE ENERGY</h2>
+                                      <p style="margin: 0; font-weight: 700;">OVERALL SUMMARY REPORT</p>
+                                  </div>
+                          
+                                  <br>
+
+                                  <p style="font-weight: 800;">CASHIER REPORT</p>
+                                  <p style="text-indent: 45px;">This table represents the overall sales made by the cashier/s in the physical store from <b>${formattedDate1}</b> to <b>${formattedDate2}</b>.</p>
+
+                                  <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 12px !important;">
+                                    <thead>
+                                      <tr>
+                                        <th style="border: 1px solid black; padding: 5px;">Full Name</th>
+                                        <th style="border: 1px solid black; padding: 5px;">Overall Sales</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      ${cashierTable}
+                                    </tbody>
+                                  </table>
+
+                                </body>
+
+                              </html>`;
+
+
+
+    const browser = await puppeteer.launch({ headless: 'new' });
+    const page = await browser.newPage();
+    await page.setContent(htmlContent);
+
+    // // Generate PDF
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '15px',
+        bottom: '45px'
+      }
+    });
+
+    await browser.close();
+    // Set response headers for downloading
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="output.pdf"');
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.log(error)
+
+    res.status(500).json({
+      status: false,
+      message: "Something went wrong!",
+      error: error.message
+    });
+  }
+
+
+}
+
+
+
+
 module.exports = {
   downloadReports: downloadReports,
-  downloadPDFReport: downloadPDFReport
+  downloadPDFReport: downloadPDFReport,
+  downloadPDFReportCashier:downloadPDFReportCashier,
 };
