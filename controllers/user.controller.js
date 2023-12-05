@@ -99,10 +99,23 @@ async function getPersonalInformation(req, res) {
 
         // const result = await models.customers.findOne({ where: { id: req.params.id } });
         const result = await models.sequelize.query(`SELECT 
+                                                        C.id,
+                                                        C.firstname,
+                                                        C.middlename,
+                                                        C.lastname,
+                                                        C.gender,
+                                                        C.region,
+                                                        C.province,
+                                                        C.city,
+                                                        C.barangay,
+                                                        C.subdivision,
+                                                        C.street,
+                                                        C.houseNo,
+                                                        C.zipCode,
                                                         C.mobileNo, 
                                                         CONCAT(
                                                             C.houseNo, ", ", 
-                                                            C.street, ", ",   -- Added comma here
+                                                            C.street, ", ",
                                                             C.subdivision, ", ", 
                                                             B.brgyDesc, ", ", 
                                                             CM.citymunDesc, ", ",  
