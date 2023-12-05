@@ -16,7 +16,7 @@ async function getOrderByStatus(req, res) {
 
     try {
 
-        const result = await models.sequelize.query(`SELECT OT.id, C.firstname, C.lastname, CA.email, OT.location, C.mobileNo, OT.remarks, OT.status, OT.createdAt, OT.updatedAt from onlinetransactions OT INNER JOIN customers C ON OT.custId = C.id INNER JOIN cust_accounts CA ON CA.custId = C.id WHERE OT.status='${req.params.status}'`);
+        const result = await models.sequelize.query(`SELECT OT.id, C.firstname, C.lastname, CA.email, OT.location, C.mobileNo, OT.remarks, OT.status, OT.createdAt, OT.updatedAt from onlineTransactions OT INNER JOIN customers C ON OT.custId = C.id INNER JOIN cust_accounts CA ON CA.custId = C.id WHERE OT.status='${req.params.status}'`);
 
         res.status(200).json({
             success: true,
@@ -39,7 +39,7 @@ async function getOrderByStatus(req, res) {
 async function getOrderById(req, res) {
     try {
 
-        const result = await models.sequelize.query(`SELECT OT.id, C.firstname, C.lastname, CA.email, OT.location, C.mobileNo, OT.remarks, OT.status, OT.paymentFile, OT.createdAt, OT.updatedAt from onlinetransactions OT INNER JOIN customers C ON OT.custId = C.id INNER JOIN cust_accounts CA ON CA.custId = C.id WHERE OT.id='${req.params.id}' ORDER BY OT.createdAt`);
+        const result = await models.sequelize.query(`SELECT OT.id, C.firstname, C.lastname, CA.email, OT.location, C.mobileNo, OT.remarks, OT.status, OT.paymentFile, OT.createdAt, OT.updatedAt from onlineTransactions OT INNER JOIN customers C ON OT.custId = C.id INNER JOIN cust_accounts CA ON CA.custId = C.id WHERE OT.id='${req.params.id}' ORDER BY OT.createdAt`);
 
 
         // const orders = await models.onlineSales.findAll({where: {OLTransID: req.params.id} })
@@ -96,7 +96,7 @@ async function updateOrderTransaction(req, res) {
 
         console.log(`custId ${custId[0].custId}`)
         console.log("==================================")
-        const productLists = await models.sequelize.query(`SELECT P.id, P.product FROM onlinesales OS INNER JOIN products P ON OS.prodId = P.id WHERE OLTransID=${req.body.id}`);
+        const productLists = await models.sequelize.query(`SELECT P.id, P.product FROM onlineSales OS INNER JOIN products P ON OS.prodId = P.id WHERE OLTransID=${req.body.id}`);
 
         let productReview = "";
 

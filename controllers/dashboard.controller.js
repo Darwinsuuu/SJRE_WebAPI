@@ -6,12 +6,12 @@ async function getWidgetsCount(req, res) {
     try {
 
         const customer = await models.sequelize.query(`SELECT count(id) as count FROM customers`);
-        const onlineSales = await models.sequelize.query(`SELECT count(id) as count FROM onlinetransactions WHERE status = 'Completed'`);
+        const onlineSales = await models.sequelize.query(`SELECT count(id) as count FROM onlineTransactions WHERE status = 'Completed'`);
         const storeSales = await models.sequelize.query(`SELECT count(id) as count FROM sales`);
-        const onlineOrder = await models.sequelize.query(`SELECT count(id) as count FROM onlinetransactions WHERE status = 'Pending'`);
+        const onlineOrder = await models.sequelize.query(`SELECT count(id) as count FROM onlineTransactions WHERE status = 'Pending'`);
         const checkInventory = await models.sequelize.query(`SELECT count(id) as count FROM products WHERE quantity <= stockReminder AND status = 1`);
         const storeSalesIncome = await models.sequelize.query(`SELECT SUM(totalPrice) as SUM FROM sales`);
-        const onlineSalesIncome = await models.sequelize.query(`SELECT SUM(OS.totalPrice) as SUM FROM onlinesales OS INNER JOIN onlinetransactions OT ON OT.id = OS.OLTransID WHERE OT.status = 'Completed'`);
+        const onlineSalesIncome = await models.sequelize.query(`SELECT SUM(OS.totalPrice) as SUM FROM onlineSales OS INNER JOIN onlineTransactions OT ON OT.id = OS.OLTransID WHERE OT.status = 'Completed'`);
 
         let widgetValues = {
             customer: customer[0][0].count,

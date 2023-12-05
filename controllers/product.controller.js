@@ -127,7 +127,7 @@ LEFT JOIN
     (SELECT prodId, SUM(totalSold) AS totalSold FROM
         (SELECT id AS prodId, quantity AS totalSold FROM sales
          UNION ALL
-         SELECT id AS prodId, quantity AS totalSold FROM onlinesales) sales_combined
+         SELECT id AS prodId, quantity AS totalSold FROM onlineSales) sales_combined
      GROUP BY prodId) s ON p.id = s.prodId
 LEFT JOIN
     (SELECT prodId, AVG(rating) AS averageRating FROM reviews GROUP BY prodId) r ON p.id = r.prodId;
@@ -216,7 +216,7 @@ async function getSpecificProduct(req, res) {
                                                                         prodId,
                                                                         SUM(quantity) AS totalSold
                                                                     FROM
-                                                                        onlinesales
+                                                                        onlineSales
                                                                     WHERE
                                                                         prodId = ${req.params.id}
                                                                     GROUP BY
@@ -242,7 +242,7 @@ async function getSpecificProduct(req, res) {
                                                     `, { type: QueryTypes.SELECT });
 
     // const reponseReview = await models.review.findAll({ where: { prodId: req.params.id } });
-    const responseReview = await models.sequelize.query(`SELECT C.firstname, C.lastname, R.reviewDesc, R.rating, R.createdAt FROM reviews R INNER JOIN customers C ON c.id = R.custId WHERE R.prodId=${req.params.id}`);
+    const responseReview = await models.sequelize.query(`SELECT C.firstname, C.lastname, R.reviewDesc, R.rating, R.createdAt FROM reviews R INNER JOIN customers C ON C.id = R.custId WHERE R.prodId=${req.params.id}`);
 
     console.log(responseReview)
 
@@ -346,7 +346,7 @@ async function getAllProductsWithoutCategory(req, res) {
 async function getTopProducts(req, res) {
 
     try {
-        const result = await models.sequelize.query(`SELECT product, productDesc, COALESCE(SUM(quantity), 0) AS totalQuantity, imgFilename, MAX(createdAt) AS maxCreatedAt FROM ( SELECT P.product, P.productDesc, OS.quantity, P.imgFilename, P.createdAt FROM products P LEFT JOIN onlinesales OS ON OS.prodId = P.id LEFT JOIN onlinetransactions OT ON OS.OLTransID = OT.id UNION ALL SELECT P.product, P.productDesc, S.quantity, P.imgFilename, P.createdAt FROM sales S LEFT JOIN products P ON S.prodId = P.id ) AS combined_data GROUP BY product, productDesc ORDER BY totalQuantity DESC, maxCreatedAt ASC LIMIT 5`)
+        const result = await models.sequelize.query(`SELECT product, productDesc, COALESCE(SUM(quantity), 0) AS totalQuantity, imgFilename, MAX(createdAt) AS maxCreatedAt FROM ( SELECT P.product, P.productDesc, OS.quantity, P.imgFilename, P.createdAt FROM products P LEFT JOIN onlineSales OS ON OS.prodId = P.id LEFT JOIN onlineTransactions OT ON OS.OLTransID = OT.id UNION ALL SELECT P.product, P.productDesc, S.quantity, P.imgFilename, P.createdAt FROM sales S LEFT JOIN products P ON S.prodId = P.id ) AS combined_data GROUP BY product, productDesc ORDER BY totalQuantity DESC, maxCreatedAt ASC LIMIT 5`)
 
         res.status(200).json({
             success: true,

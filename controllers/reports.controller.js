@@ -207,7 +207,7 @@ async function downloadPDFReport(req, res) {
                                                   SUM(CASE WHEN status = 'Declined' THEN 1 ELSE 0 END) AS totalDeclined,
                                                   COUNT(*) as totalTransactions
                                               FROM 
-                                                onlinetransactions
+                                                onlineTransactions
                                               WHERE 
                                                 createdAt BETWEEN '${dateStart}' AND '${dateEnd}'`)
 
@@ -220,7 +220,7 @@ async function downloadPDFReport(req, res) {
                                                   productDesc,
                                                   COALESCE(SUM(quantity), 0) AS totalQuantity,
                                                   COALESCE(SUM(CASE WHEN source = 'sales' THEN totalPrice ELSE 0 END), 0) AS physicalStoreSales,
-                                                  COALESCE(SUM(CASE WHEN source = 'onlinesales' THEN totalPrice ELSE 0 END), 0) AS onlineStoreSales,
+                                                  COALESCE(SUM(CASE WHEN source = 'onlineSales' THEN totalPrice ELSE 0 END), 0) AS onlineStoreSales,
                                                   COALESCE(SUM(totalPrice), 0) AS overallSales,
                                                   MAX(createdAt) AS maxCreatedAt
                                               FROM (
@@ -231,10 +231,10 @@ async function downloadPDFReport(req, res) {
                                                       COALESCE(OS.totalPrice, 0) AS totalPrice,
                                                       P.imgFilename,
                                                       P.createdAt,
-                                                      'onlinesales' AS source
+                                                      'onlineSales' AS source
                                                   FROM products P
-                                                  LEFT JOIN onlinesales OS ON OS.prodId = P.id
-                                                  LEFT JOIN onlinetransactions OT ON OS.OLTransID = OT.id
+                                                  LEFT JOIN onlineSales OS ON OS.prodId = P.id
+                                                  LEFT JOIN onlineTransactions OT ON OS.OLTransID = OT.id
                                                   WHERE P.status = 1 AND (OS.createdAt BETWEEN '${dateStart}' AND '${dateEnd}' OR OS.createdAt IS NULL)
                                                   UNION ALL
                                                   SELECT

@@ -162,6 +162,9 @@ async function checkout(req, res) {
             })
             .then((data) => {
                 products = data;
+
+                // return models.sequelize.query(`INSERT INTO onlineTransactions (custId, location, remarks, status, paymentFile, createdAt) VALUES ('${req.body.custId}', '${req.body.location}', '${req.body.remarks}', 'Pending', '${req.file.filename}', NOW())`, { transaction });
+
                 return models.onlineTransaction.create(OLTransData, { transaction });
             })
             .then((result) => {
@@ -353,18 +356,28 @@ async function checkout(req, res) {
     }
 
 }
-
 async function getAllPurchasesById(req, res) {
     try {
-        const result = await models.onlineTransaction.findAll({ where: { custId: req.params.id } }, { order: [['updatedAt', 'DESC']] });
+        // const result = await models.onlineTransaction.findAll({
+        //     where: { custId: req.params.id },
+        //     order: [['updatedAt', 'DESC']],
+        // });
 
-        if (result) {
-            const promises = result.map(async (element) => {
-                const transaction = await models.sequelize.query(`
-                    SELECT OS.currentPrice, OS.currentSale, OS.currentComputedPrice, OS.quantity, OS.totalPrice, P.imgFilename, P.product 
-                    FROM onlinesales OS 
-                    INNER JOIN products P ON OS.prodId = P.id 
-                    WHERE OS.OLTransID = :transId`, {
+        const result = await models.sequelize.query(`SELECT *
+                                            FROM onlineTransactions
+                                            WHERE custId = ${req.params.id}
+                                            ORDER BY updatedAt DESC`);
+
+        // Access the actual result using result[0]
+        const transactions = result[0];
+
+        if (transactions) {
+            const promises = transactions.map(async (element) => {
+                const transactionResult = await models.sequelize.query(`
+            SELECT OS.currentPrice, OS.currentSale, OS.currentComputedPrice, OS.quantity, OS.totalPrice, P.imgFilename, P.product 
+            FROM onlineSales OS 
+            INNER JOIN products P ON OS.prodId = P.id 
+            WHERE OS.OLTransID = :transId`, {
                     replacements: { transId: element.id },
                     type: models.sequelize.QueryTypes.SELECT,
                 });
@@ -373,7 +386,7 @@ async function getAllPurchasesById(req, res) {
                     status: element.status,
                     createdAt: element.createdAt,
                     remarks: element.remarks,
-                    sales: transaction,
+                    sales: transactionResult,
                 };
             });
 
@@ -389,10 +402,12 @@ async function getAllPurchasesById(req, res) {
         res.status(500).json({
             success: false,
             message: "Something went wrong!",
-            error: error.message,
+            error: error.message,  // Send the error message for better visibility
+            stack: error.stack,    // Include the stack trace for more details
         });
     }
 }
+
 
 
 
