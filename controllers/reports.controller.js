@@ -447,7 +447,6 @@ async function downloadPDFReport(req, res) {
 async function downloadPDFReportCashier(req, res) {
   try {
 
-
     console.log(req.body)
 
     let dateStart = req.body.data.start;
@@ -469,18 +468,30 @@ async function downloadPDFReportCashier(req, res) {
 
 
 
-    let query2 = await models.sequelize.query(`SELECT c.id AS id, c.firstname, c.lastname, c.username, SUM(sales.totalPrice) AS sales, c.status FROM cashiers c LEFT JOIN sales ON c.id = sales.cashierId WHERE sales.createdAt BETWEEN '${dateStart}' AND '${dateEnd}' AND c.id = '${req.body.data.id}' GROUP BY c.id, c.username, c.firstname, c.lastname, c.status ORDER BY c.status DESC`, { type: QueryTypes.SELECT });
+    // let query2 = await models.sequelize.query(`SELECT c.id AS id, c.firstname, c.lastname, c.username, SUM(sales.totalPrice) AS sales, c.status FROM cashiers c LEFT JOIN sales ON c.id = sales.cashierId WHERE sales.createdAt BETWEEN '${dateStart}' AND '${dateEnd}' AND c.id = '${req.body.data.id}' GROUP BY c.id, c.username, c.firstname, c.lastname, c.status ORDER BY c.status DESC`, { type: QueryTypes.SELECT });
 
+
+    let query2 = await models.sequelize.query(`SELECT concat(C.firstname, ' ', C.lastname) as name, P.product, S.currentComputedPrice, S.quantity, S.totalPrice FROM sales S INNER JOIN products P ON S.prodId = P.id INNER JOIN cashiers C ON S.cashierId = C.id WHERE S.createdAt BETWEEN '${dateStart}' AND '${dateEnd}' AND C.id = ${req.body.data.id}`);
 
     const [cashierResult] = await Promise.all([query2]);
 
     let cashierTable = "";
 
-    cashierResult.forEach(element => {
-      cashierTable += `<tr>
-                        <td style="border: 1px solid black; padding: 5px;">${element.firstname.replace(/\b\w/g, (match) => match.toUpperCase())} ${element.lastname.replace(/\b\w/g, (match) => match.toUpperCase())}</td>
-                        <td style="border: 1px solid black; padding: 5px;">₱ ${element.sales.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
-                       </tr>`
+    console.log(cashierResult)
+    let name = cashierResult[0][0].name
+
+    cashierResult[0].forEach(element => {
+      // cashierTable += `<tr>
+      //                   <td style="border: 1px solid black; padding: 5px;">${element.firstname.replace(/\b\w/g, (match) => match.toUpperCase())} ${element.lastname.replace(/\b\w/g, (match) => match.toUpperCase())}</td>
+      //                   <td style="border: 1px solid black; padding: 5px;">₱ ${element.sales.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
+      //                  </tr>`
+
+        cashierTable += `<tr>
+                            <td style="border: 1px solid black; padding: 5px;">${element.product}</td>
+                            <td style="border: 1px solid black; padding: 5px;">${element.currentComputedPrice}</td>
+                            <td style="border: 1px solid black; padding: 5px;">${element.quantity}</td>
+                            <td style="border: 1px solid black; padding: 5px;">${element.totalPrice}</td>
+                         </tr>`
     });
 
 
@@ -505,13 +516,15 @@ async function downloadPDFReportCashier(req, res) {
                                   <br>
 
                                   <p style="font-weight: 800;">CASHIER REPORT</p>
-                                  <p style="text-indent: 45px;">This table represents the overall sales made by the cashier/s in the physical store from <b>${formattedDate1}</b> to <b>${formattedDate2}</b>.</p>
+                                  <p style="text-indent: 45px;">This table represents the overall sales made by <b>${name.replace(/\b\w/g, (match) => match.toUpperCase())}</b> in the physical store from <b>${formattedDate1}</b> to <b>${formattedDate2}</b>.</p>
 
                                   <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 12px !important;">
                                     <thead>
                                       <tr>
-                                        <th style="border: 1px solid black; padding: 5px;">Full Name</th>
-                                        <th style="border: 1px solid black; padding: 5px;">Overall Sales</th>
+                                        <th style="border: 1px solid black; padding: 5px;">Product</th>
+                                        <th style="border: 1px solid black; padding: 5px;">Current Price</th>
+                                        <th style="border: 1px solid black; padding: 5px;">Quantity</th>
+                                        <th style="border: 1px solid black; padding: 5px;">Total Price</th>
                                       </tr>
                                     </thead>
                                     <tbody>
