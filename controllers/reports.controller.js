@@ -13,7 +13,7 @@ async function downloadReports(req, res) {
     // Fetch data from Table2
     const table2Data = await models.onlineSales.findAll();
     const table3Data = await models.sale.findAll();
-    const table4Data = await models.sequelize.query(`SELECT C.id, C.firstname, C.middlename, C.lastname, C.gender, C.mobileNo, CA.email, R.regDesc, P.provDesc, CM.citymunDesc, B.brgyDesc, C.subdivision, C.street, C.houseNo, C.zipCode, C.fullAddress, C.createdAt FROM customers C INNER JOIN cust_accounts CA ON C.id = CA.custId INNER JOIN refregion R ON C.region = R.regCode INNER JOIN refprovince P ON C.province = P.provCode INNER JOIN refcitymun CM ON C.city = CM.citymunCode INNER JOIN refbrgy B ON C.barangay = B.brgyCode`);
+    const table4Data = await models.sequelize.query(`SELECT C.id, C.firstname, C.middlename, C.lastname, C.gender, C.mobileNo, CA.email, R.regDesc, P.provDesc, CM.citymunDesc, B.brgyDesc, C.subdivision, C.street, C.houseNo, C.zipCode, C.createdAt FROM customers C INNER JOIN cust_accounts CA ON C.id = CA.custId INNER JOIN refregion R ON C.region = R.regCode INNER JOIN refprovince P ON C.province = P.provCode INNER JOIN refcitymun CM ON C.city = CM.citymunCode INNER JOIN refbrgy B ON C.barangay = B.brgyCode`);
     const table5Data = await models.cashier.findAll();
     const table6Data = await models.product.findAll();
     const table7Data = await models.categories.findAll();
@@ -98,7 +98,6 @@ async function downloadReports(req, res) {
       { header: 'Street', key: 'street', width: 10 },
       { header: 'House No.', key: 'houseNo', width: 10 },
       { header: 'Zip Code', key: 'zipCode', width: 10 },
-      { header: 'Full Address', key: 'fullAddress', width: 10 },
       { header: 'Created At', key: 'createdAt', width: 10 },
     ];
     table4Data[0].forEach((row) => {
