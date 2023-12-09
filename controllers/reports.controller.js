@@ -429,12 +429,17 @@ async function downloadPDFReport(req, res) {
     res.setHeader('Content-Disposition', 'attachment; filename="output.pdf"');
     res.send(pdfBuffer);
   } catch (error) {
-    console.log(error)
+    console.error('Error in downloadPDFReport:', error);
+
+    if (error instanceof Error) {
+      // Handle specific error scenarios
+      console.error('Error Message:', error.message);
+    }
 
     res.status(500).json({
       status: false,
-      message: "Something went wrong!",
-      error: error.message
+      message: 'Something went wrong!',
+      error: error.message,
     });
   }
 

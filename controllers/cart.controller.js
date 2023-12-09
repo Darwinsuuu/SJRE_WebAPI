@@ -53,7 +53,8 @@ async function createCart(req, res) {
         const checkCartData = await models.cart.findOne({ where: { custId: cartData.custId, prodId: cartData.prodId } });
 
         if (checkCartData) {
-            const newQuantity = parseInt(cartData.quantity) + parseInt(checkCartData.quantity);
+            // const newQuantity = parseInt(cartData.quantity) + parseInt(checkCartData.quantity);
+            const newQuantity = parseInt(cartData.quantity);
             models.cart.update({ quantity: newQuantity }, { where: { id: checkCartData.id } });
         } else {
             await models.cart.create(cartData);
