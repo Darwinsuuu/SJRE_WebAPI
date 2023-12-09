@@ -18,8 +18,8 @@ const reportRoute = require('./routes/reports.route');
 const reviewRoute = require('./routes/review.route');
 
 app.use(cors({
-    origin: '*',
-    methods: ['GET','POST','DELETE','UPDATE','PUT','PATCH']
+    origin: ['https://sjrenewableenergy.com', 'https://sjreapi.online'],
+    methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH']
 }));
 
 

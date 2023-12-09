@@ -174,20 +174,64 @@ async function downloadReports(req, res) {
   }
 }
 
+// async function downloadPDFReportCashier(req, res) {
+//   let browser;
+//   try {
+//     // Launch browser
+//     browser = await puppeteer.launch({ headless: true });
+
+//     // Create a new page
+//     const page = await browser.newPage();
+
+//     // Set content and generate PDF
+//     await page.setContent('<h1>Hello, this is a sample PDF</h1>');
+//     const pdfBuffer = await page.pdf({
+//       format: 'A4',
+//       printBackground: true,
+//     });
+
+//     // Set response headers for downloading
+//     res.setHeader('Content-Type', 'application/pdf');
+//     res.setHeader('Content-Disposition', 'attachment; filename="output.pdf"');
+//     res.send(pdfBuffer);
+//   } catch (error) {
+//     console.error('Error in downloadPDFReport:', error);
+//     res.status(500).json({
+//       status: false,
+//       message: 'Something went wrong!',
+//       error: error.message,
+//     });
+//   } finally {
+//     // Close the browser in all cases
+//     if (browser) {
+//       await browser.close();
+//     }
+//   }
+// }
+
+
+
 
 async function downloadPDFReport(req, res) {
+  let browser;
   try {
 
+    // res.status(200).json({
+    //   status: true,
+    //   message: 'Hello',
+    //   result: req.body
+    // });
+
     console.log("============================")
-    console.log(req.body.dateRange.end)
+    console.log(req.body.end)
     console.log("============================")
 
-    let dateStart = req.body.dateRange.start;
+    let dateStart = req.body.start;
     const date1 = new Date(dateStart);
     const options1 = { year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate1 = date1.toLocaleDateString('en-US', options1);
 
-    let dateEnd = req.body.dateRange.end;
+    let dateEnd = req.body.end;
     const date2 = new Date(dateEnd);
     const options2 = { year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate2 = date2.toLocaleDateString('en-US', options2);
@@ -198,7 +242,6 @@ async function downloadPDFReport(req, res) {
     const dateFormat = new Intl.DateTimeFormat('en-US', options3);
 
     const formattedDate = dateFormat.format(currentDate);
-
 
     let query1 = await models.sequelize.query(`SELECT
                                                   SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) AS totalPending,
@@ -319,19 +362,19 @@ async function downloadPDFReport(req, res) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Document</title>
     </head>
-    
+
     <body>
-    
+
         <div
             style="display: block; width: 100%; max-width: 700px; margin: auto; padding: -100px 10px 10px 10px; background: #fff; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12px; color: #1b1b1b !important; text-align: justify;">
-    
+
             <div style="text-align: center;">
-                <img src="data:image/jpeg;base64,${fs.readFileSync(process.cwd() + "\\uploads\\images\\SJ_logo.png").toString('base64')
-      }" alt="alt text" width="120" />
+                <img src="data:image/jpeg;base64,${fs.readFileSync('/var/www/vhosts/sjreapi.online/httpdocs/uploads/images/SJ_logo.png').toString('base64')}" alt="alt text" width="120" />
+
                 <h2 style="margin: -20px 0 0">SJ RENEWABLE ENERGY</h2>
                 <p style="margin: 0; font-weight: 700;">OVERALL SUMMARY REPORT</p>
             </div>
-    
+
             <br>
 
             <p style="font-weight: 800;">ONLINE TRANSACTION REPORT</p>
@@ -408,12 +451,14 @@ async function downloadPDFReport(req, res) {
         </html>`;
 
 
+    // Launch browser
+    browser = await puppeteer.launch({ headless: true });
 
-    const browser = await puppeteer.launch({ headless: 'new' });
+    // Create a new page
     const page = await browser.newPage();
-    await page.setContent(htmlContent);
 
-    // // Generate PDF
+    // Set content and generate PDF
+    await page.setContent(htmlContent);
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -423,24 +468,43 @@ async function downloadPDFReport(req, res) {
       }
     });
 
-    await browser.close();
     // Set response headers for downloading
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="output.pdf"');
     res.send(pdfBuffer);
+
+
+    // browser = await puppeteer.launch({ headless: true });
+    // const page = await browser.newPage();
+    // await page.setContent(htmlContent);
+
+    // // // Generate PDF
+    // const pdfBuffer = await page.pdf({
+    //   format: 'A4',
+    //   printBackground: true,
+    //   margin: {
+    //     top: '15px',
+    //     bottom: '45px'
+    //   }
+    // });
+
+    // await browser.close();
+    // // Set response headers for downloading
+    // res.setHeader('Content-Type', 'application/pdf');
+    // res.setHeader('Content-Disposition', 'attachment; filename="output.pdf"');
+    // res.send(pdfBuffer);
   } catch (error) {
     console.error('Error in downloadPDFReport:', error);
-
-    if (error instanceof Error) {
-      // Handle specific error scenarios
-      console.error('Error Message:', error.message);
-    }
-
     res.status(500).json({
       status: false,
       message: 'Something went wrong!',
       error: error.message,
     });
+  } finally {
+    // Close the browser in all cases
+    if (browser) {
+      await browser.close();
+    }
   }
 
 
@@ -450,16 +514,18 @@ async function downloadPDFReport(req, res) {
 
 
 async function downloadPDFReportCashier(req, res) {
+  
+  let browser;
   try {
 
     console.log(req.body)
 
-    let dateStart = req.body.data.start;
+    let dateStart = req.body.start;
     const date1 = new Date(dateStart);
     const options1 = { year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate1 = date1.toLocaleDateString('en-US', options1);
 
-    let dateEnd = req.body.data.end;
+    let dateEnd = req.body.end;
     const date2 = new Date(dateEnd);
     const options2 = { year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate2 = date2.toLocaleDateString('en-US', options2);
@@ -475,23 +541,28 @@ async function downloadPDFReportCashier(req, res) {
 
     // let query2 = await models.sequelize.query(`SELECT c.id AS id, c.firstname, c.lastname, c.username, SUM(sales.totalPrice) AS sales, c.status FROM cashiers c LEFT JOIN sales ON c.id = sales.cashierId WHERE sales.createdAt BETWEEN '${dateStart}' AND '${dateEnd}' AND c.id = '${req.body.data.id}' GROUP BY c.id, c.username, c.firstname, c.lastname, c.status ORDER BY c.status DESC`, { type: QueryTypes.SELECT });
 
+    // let query1 = await models.cashier.findOne({where: {id: req.body.id}});
+    let query1 = await models.sequelize.query(`SELECT concat(firstname, ' ', lastname) as name FROM cashiers WHERE id = ${req.body.id}`);
 
-    let query2 = await models.sequelize.query(`SELECT concat(C.firstname, ' ', C.lastname) as name, P.product, S.currentComputedPrice, S.quantity, S.totalPrice FROM sales S INNER JOIN products P ON S.prodId = P.id INNER JOIN cashiers C ON S.cashierId = C.id WHERE S.createdAt BETWEEN '${dateStart}' AND '${dateEnd}' AND C.id = ${req.body.data.id}`);
+    let query2 = await models.sequelize.query(`SELECT concat(C.firstname, ' ', C.lastname) as name, P.product, S.currentComputedPrice, S.quantity, S.totalPrice FROM sales S INNER JOIN products P ON S.prodId = P.id INNER JOIN cashiers C ON S.cashierId = C.id WHERE S.createdAt BETWEEN '${dateStart}' AND '${dateEnd}' AND C.id = ${req.body.id}`);
 
-    const [cashierResult] = await Promise.all([query2]);
+    const [cashierInfo, cashierResult] = await Promise.all([query1, query2]);
+
+    // res.status(200).json({
+    //   status: true,
+    //   cashierResult: cashierResult[0],
+    //   cashierName: cashierInfo[0][0].name
+    // })
 
     let cashierTable = "";
 
+
+
     console.log(cashierResult)
-    let name = cashierResult[0][0].name
+    let name = cashierInfo[0][0].name;
 
     cashierResult[0].forEach(element => {
-      // cashierTable += `<tr>
-      //                   <td style="border: 1px solid black; padding: 5px;">${element.firstname.replace(/\b\w/g, (match) => match.toUpperCase())} ${element.lastname.replace(/\b\w/g, (match) => match.toUpperCase())}</td>
-      //                   <td style="border: 1px solid black; padding: 5px;">₱ ${element.sales.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</td>
-      //                  </tr>`
-
-        cashierTable += `<tr>
+      cashierTable += `<tr>
                             <td style="border: 1px solid black; padding: 5px;">${element.product}</td>
                             <td style="border: 1px solid black; padding: 5px;">${element.currentComputedPrice}</td>
                             <td style="border: 1px solid black; padding: 5px;">${element.quantity}</td>
@@ -513,7 +584,7 @@ async function downloadPDFReportCashier(req, res) {
                                   style="display: block; width: 100%; max-width: 700px; margin: auto; padding: -100px 10px 10px 10px; background: #fff; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12px; color: #1b1b1b !important; text-align: justify;">
                           
                                   <div style="text-align: center;">
-                                      <img src="data:image/jpeg;base64,${fs.readFileSync(process.cwd() + "\\uploads\\images\\SJ_logo.png").toString('base64')}" alt="alt text" width="120" />
+                                      <img src="data:image/jpeg;base64,${fs.readFileSync('/var/www/vhosts/sjreapi.online/httpdocs/uploads/images/SJ_logo.png').toString('base64')}" alt="alt text" width="120" />
                                       <h2 style="margin: -20px 0 0">SJ RENEWABLE ENERGY</h2>
                                       <p style="margin: 0; font-weight: 700;">OVERALL SUMMARY REPORT</p>
                                   </div>
@@ -543,33 +614,57 @@ async function downloadPDFReportCashier(req, res) {
 
 
 
-    const browser = await puppeteer.launch({ headless: 'new' });
-    const page = await browser.newPage();
-    await page.setContent(htmlContent);
+    // // Launch browser
+    // browser = await puppeteer.launch({ headless: true });
 
-    // // Generate PDF
+    // // Create a new page
+    // const page = await browser.newPage();
+
+    // // Set content and generate PDF
+    // await page.setContent(htmlContent);
+    // const pdfBuffer = await page.pdf({
+    //   format: 'A4',
+    //   printBackground: true,
+    //   margin: {
+    //     top: '15px',
+    //     bottom: '45px'
+    //   }
+    // });
+
+    // // Set response headers for downloading
+    // res.setHeader('Content-Type', 'application/pdf');
+    // res.setHeader('Content-Disposition', 'attachment; filename="output.pdf"');
+    // res.send(pdfBuffer);
+
+    // Launch browser
+    browser = await puppeteer.launch({ headless: true });
+
+    // Create a new page
+    const page = await browser.newPage();
+
+    // Set content and generate PDF
+    await page.setContent(htmlContent);
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: {
-        top: '15px',
-        bottom: '45px'
-      }
     });
 
-    await browser.close();
     // Set response headers for downloading
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="output.pdf"');
     res.send(pdfBuffer);
   } catch (error) {
-    console.log(error)
-
+    console.error('Error in downloadPDFReport:', error);
     res.status(500).json({
       status: false,
-      message: "Something went wrong!",
-      error: error.message
+      message: 'Something went wrong!',
+      error: error.message,
     });
+  } finally {
+    // Close the browser in all cases
+    if (browser) {
+      await browser.close();
+    }
   }
 
 
@@ -581,5 +676,5 @@ async function downloadPDFReportCashier(req, res) {
 module.exports = {
   downloadReports: downloadReports,
   downloadPDFReport: downloadPDFReport,
-  downloadPDFReportCashier:downloadPDFReportCashier,
+  downloadPDFReportCashier: downloadPDFReportCashier,
 };
