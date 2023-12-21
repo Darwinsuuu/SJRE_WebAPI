@@ -228,17 +228,17 @@ async function downloadPDFReport(req, res) {
 
     let dateStart = req.body.start;
     const date1 = new Date(dateStart);
-    const options1 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options1 = { timeZone: 'Asia/Manila', year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate1 = date1.toLocaleDateString('en-US', options1);
 
     let dateEnd = req.body.end;
     const date2 = new Date(dateEnd);
-    const options2 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options2 = { timeZone: 'Asia/Manila', year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate2 = date2.toLocaleDateString('en-US', options2);
 
     const currentDate = new Date();
 
-    const options3 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options3 = { timeZone: 'Asia/Manila', year: 'numeric', month: 'long', day: 'numeric' };
     const dateFormat = new Intl.DateTimeFormat('en-US', options3);
 
     const formattedDate = dateFormat.format(currentDate);
@@ -522,17 +522,17 @@ async function downloadPDFReportCashier(req, res) {
 
     let dateStart = req.body.start;
     const date1 = new Date(dateStart);
-    const options1 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options1 = { timeZone: 'Asia/Manila', year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate1 = date1.toLocaleDateString('en-US', options1);
 
     let dateEnd = req.body.end;
     const date2 = new Date(dateEnd);
-    const options2 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options2 = { timeZone: 'Asia/Manila', year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate2 = date2.toLocaleDateString('en-US', options2);
 
     const currentDate = new Date();
 
-    const options3 = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options3 = { timeZone: 'Asia/Manila', year: 'numeric', month: 'long', day: 'numeric' };
     const dateFormat = new Intl.DateTimeFormat('en-US', options3);
 
     const formattedDate = dateFormat.format(currentDate);
